@@ -1,10 +1,4 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
 import numpy as np
-import matplotlib.cbook as mcbook
 from matplotlib.transforms import Bbox
 from . import clip_path
 clip_line_to_rect = clip_path.clip_line_to_rect
@@ -63,7 +57,7 @@ class GridFinderBase(object):
         Derived must define "transform_xy, inv_transform_xy"
         (may use update_transform)
         """
-        super(GridFinderBase, self).__init__()
+        super().__init__()
 
         self.extreme_finder = extreme_finder
         self.grid_locator1 = grid_locator1
@@ -145,21 +139,22 @@ class GridFinderBase(object):
         lons_i = np.linspace(lon_min, lon_max, 100) # for interpolation
         lats_i = np.linspace(lat_min, lat_max, 100)
 
-        lon_lines = [self.transform_xy(np.zeros_like(lats_i)+lon, lats_i) \
+        lon_lines = [self.transform_xy(np.zeros_like(lats_i) + lon, lats_i)
                      for lon in lon_values]
-        lat_lines = [self.transform_xy(lons_i, np.zeros_like(lons_i)+lat) \
+        lat_lines = [self.transform_xy(lons_i, np.zeros_like(lons_i) + lat)
                      for lat in lat_values]
 
         return lon_lines, lat_lines
 
 
     def _clip_grid_lines_and_find_ticks(self, lines, values, levs, bb):
-        gi = dict()
-        gi["values"] = []
-        gi["levels"] = []
-        gi["tick_levels"] = dict(left=[], bottom=[], right=[], top=[])
-        gi["tick_locs"] = dict(left=[], bottom=[], right=[], top=[])
-        gi["lines"] = []
+        gi = {
+            "values": [],
+            "levels": [],
+            "tick_levels": dict(left=[], bottom=[], right=[], top=[]),
+            "tick_locs": dict(left=[], bottom=[], right=[], top=[]),
+            "lines": [],
+        }
 
         tck_levels = gi["tick_levels"]
         tck_locs = gi["tick_locs"]
@@ -170,7 +165,8 @@ class GridFinderBase(object):
             gi["levels"].append(v)
             gi["lines"].append(xy)
 
-            for tck, direction in zip(tcks, ["left", "bottom", "right", "top"]):
+            for tck, direction in zip(tcks,
+                                      ["left", "bottom", "right", "top"]):
                 for t in tck:
                     tck_levels[direction].append(lev)
                     tck_locs[direction].append(t)
@@ -181,15 +177,13 @@ class GridFinderBase(object):
     def update_transform(self, aux_trans):
         if isinstance(aux_trans, Transform):
             def transform_xy(x, y):
-                x, y = np.asarray(x), np.asarray(y)
-                ll1 = np.concatenate((x[:,np.newaxis], y[:,np.newaxis]), 1)
+                ll1 = np.column_stack([x, y])
                 ll2 = aux_trans.transform(ll1)
                 lon, lat = ll2[:,0], ll2[:,1]
                 return lon, lat
 
             def inv_transform_xy(x, y):
-                x, y = np.asarray(x), np.asarray(y)
-                ll1 = np.concatenate((x[:,np.newaxis], y[:,np.newaxis]), 1)
+                ll1 = np.column_stack([x, y])
                 ll2 = aux_trans.inverted().transform(ll1)
                 lon, lat = ll2[:,0], ll2[:,1]
                 return lon, lat
@@ -213,8 +207,6 @@ class GridFinderBase(object):
                 raise ValueError("unknown update property '%s'" % k)
 
 
-
-
 class GridFinder(GridFinderBase):
 
     def __init__(self,
@@ -232,7 +224,6 @@ class GridFinder(GridFinderBase):
 
         locator1, locator2 : grid locator for 1st and 2nd axis.
         """
-
         if extreme_finder is None:
             extreme_finder = ExtremeFinderSimple(20, 20)
         if grid_locator1 is None:
@@ -243,26 +234,24 @@ class GridFinder(GridFinderBase):
             tick_formatter1 = FormatterPrettyPrint()
         if tick_formatter2 is None:
             tick_formatter2 = FormatterPrettyPrint()
-
-        super(GridFinder, self).__init__( \
-                 extreme_finder,
-                 grid_locator1,
-                 grid_locator2,
-                 tick_formatter1,
-                 tick_formatter2)
-
+        super().__init__(
+            extreme_finder,
+            grid_locator1,
+            grid_locator2,
+            tick_formatter1,
+            tick_formatter2)
         self.update_transform(transform)
 
 
 class MaxNLocator(mticker.MaxNLocator):
-    def __init__(self, nbins = 10, steps = None,
-                 trim = True,
+    def __init__(self, nbins=10, steps=None,
+                 trim=True,
                  integer=False,
                  symmetric=False,
                  prune=None):
-
+        # trim argument has no effect. It has been left for API compatibility
         mticker.MaxNLocator.__init__(self, nbins, steps=steps,
-                                     trim=trim, integer=integer,
+                                     integer=integer,
                                      symmetric=symmetric, prune=prune)
         self.create_dummy_axis()
         self._factor = None
@@ -286,25 +275,24 @@ class FixedLocator(object):
         self._locs = locs
         self._factor = None
 
-
     def __call__(self, v1, v2):
         if self._factor is None:
             v1, v2 = sorted([v1, v2])
         else:
             v1, v2 = sorted([v1*self._factor, v2*self._factor])
-        locs = np.array([l for l in self._locs if ((v1 <= l) and (l <= v2))])
+        locs = np.array([l for l in self._locs if v1 <= l <= v2])
         return locs, len(locs), self._factor
 
     def set_factor(self, f):
         self._factor = f
 
 
-
 # Tick Formatter
 
 class FormatterPrettyPrint(object):
     def __init__(self, useMathText=True):
-        self._fmt = mticker.ScalarFormatter(useMathText=useMathText, useOffset=False)
+        self._fmt = mticker.ScalarFormatter(
+            useMathText=useMathText, useOffset=False)
         self._fmt.create_dummy_axis()
         self._ignore_factor = True
 
@@ -324,7 +312,7 @@ class DictFormatter(object):
         format_dict : dictionary for format strings to be used.
         formatter : fall-back formatter
         """
-        super(DictFormatter, self).__init__()
+        super().__init__()
         self._format_dict = format_dict
         self._fallback_formatter = formatter
 
@@ -334,19 +322,11 @@ class DictFormatter(object):
         """
 
         if self._fallback_formatter:
-            fallback_strings = self._fallback_formatter(direction, factor, values)
+            fallback_strings = self._fallback_formatter(
+                direction, factor, values)
         else:
             fallback_strings = [""]*len(values)
 
         r = [self._format_dict.get(k, v) for k, v in zip(values,
                                                          fallback_strings)]
         return r
-
-
-if __name__ == "__main__":
-    locator = MaxNLocator()
-    locs, nloc, factor = locator(0, 100)
-
-    fmt = FormatterPrettyPrint()
-
-    print(fmt("left", None, locs))

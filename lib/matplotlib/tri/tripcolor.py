@@ -1,15 +1,12 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
+import numpy as np
 
 from matplotlib.collections import PolyCollection, TriMesh
 from matplotlib.colors import Normalize
 from matplotlib.tri.triangulation import Triangulation
-import numpy as np
 
 
-def tripcolor(ax, *args, **kwargs):
+def tripcolor(ax, *args, alpha=1.0, norm=None, cmap=None, vmin=None,
+              vmax=None, shading='flat', facecolors=None, **kwargs):
     """
     Create a pseudocolor plot of an unstructured triangular grid.
 
@@ -38,32 +35,20 @@ def tripcolor(ax, *args, **kwargs):
     are defined at triangles. If there are the same number of points
     and triangles in the triangulation it is assumed that color
     values are defined at points; to force the use of color values at
-    triangles use the kwarg *facecolors*=C instead of just *C*.
+    triangles use the kwarg ``facecolors=C`` instead of just ``C``.
 
     *shading* may be 'flat' (the default) or 'gouraud'. If *shading*
     is 'flat' and C values are defined at points, the color values
     used for each triangle are from the mean C of the triangle's
     three points. If *shading* is 'gouraud' then color values must be
-    defined at points.  *shading* of 'faceted' is deprecated;
-    please use *edgecolors* instead.
+    defined at points.
 
     The remaining kwargs are the same as for
     :meth:`~matplotlib.axes.Axes.pcolor`.
-
-    **Example:**
-
-        .. plot:: mpl_examples/pylab_examples/tripcolor_demo.py
     """
-    if not ax._hold:
-        ax.cla()
-
-    alpha = kwargs.pop('alpha', 1.0)
-    norm = kwargs.pop('norm', None)
-    cmap = kwargs.pop('cmap', None)
-    vmin = kwargs.pop('vmin', None)
-    vmax = kwargs.pop('vmax', None)
-    shading = kwargs.pop('shading', 'flat')
-    facecolors = kwargs.pop('facecolors', None)
+    if shading not in ['flat', 'gouraud']:
+        raise ValueError("shading must be one of ['flat', 'gouraud'] "
+                         "not {0}".format(shading))
 
     tri, args, kwargs = Triangulation.get_from_args_and_kwargs(*args, **kwargs)
 
@@ -97,10 +82,7 @@ def tripcolor(ax, *args, **kwargs):
         kwargs['linewidths'] = kwargs.pop('linewidth')
     kwargs.setdefault('linewidths', linewidths)
 
-    if shading == 'faceted':   # Deprecated.
-        edgecolors = 'k'
-    else:
-        edgecolors = 'none'
+    edgecolors = 'none'
     if 'edgecolor' in kwargs:
         kwargs['edgecolors'] = kwargs.pop('edgecolor')
     ec = kwargs.setdefault('edgecolors', edgecolors)
@@ -122,8 +104,7 @@ def tripcolor(ax, *args, **kwargs):
     else:
         # Vertices of triangles.
         maskedTris = tri.get_masked_triangles()
-        verts = np.concatenate((tri.x[maskedTris][..., np.newaxis],
-                                tri.y[maskedTris][..., np.newaxis]), axis=2)
+        verts = np.stack((tri.x[maskedTris], tri.y[maskedTris]), axis=-1)
 
         # Color values.
         if facecolors is None:
@@ -137,8 +118,8 @@ def tripcolor(ax, *args, **kwargs):
 
     collection.set_alpha(alpha)
     collection.set_array(C)
-    if norm is not None:
-        assert(isinstance(norm, Normalize))
+    if norm is not None and not isinstance(norm, Normalize):
+        raise ValueError("'norm' must be an instance of 'Normalize'")
     collection.set_cmap(cmap)
     collection.set_norm(norm)
     if vmin is not None or vmax is not None:

@@ -1,5 +1,14 @@
+"""
+====
+XKCD
+====
+
+Shows how to create an xkcd-like plot.
+"""
 import matplotlib.pyplot as plt
 import numpy as np
+
+###############################################################################
 
 with plt.xkcd():
     # Based on "Stove Ownership" from XKCD by Randall Monroe
@@ -29,12 +38,15 @@ with plt.xkcd():
         '"Stove Ownership" from xkcd by Randall Monroe',
         ha='center')
 
+###############################################################################
+
+with plt.xkcd():
     # Based on "The Data So Far" from XKCD by Randall Monroe
     # http://xkcd.com/373/
 
     fig = plt.figure()
     ax = fig.add_axes((0.1, 0.2, 0.8, 0.7))
-    ax.bar([-0.125, 1.0-0.125], [0, 100], 0.25)
+    ax.bar([0, 1], [0, 100], 0.25)
     ax.spines['right'].set_color('none')
     ax.spines['top'].set_color('none')
     ax.xaxis.set_ticks_position('bottom')

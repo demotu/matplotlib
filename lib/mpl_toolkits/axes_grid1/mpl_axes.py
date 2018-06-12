@@ -1,13 +1,7 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
-import warnings
-
 import matplotlib.axes as maxes
 from matplotlib.artist import Artist
 from matplotlib.axis import XAxis, YAxis
+
 
 class SimpleChainedObjects(object):
     def __init__(self, objects):
@@ -23,22 +17,21 @@ class SimpleChainedObjects(object):
 
 
 class Axes(maxes.Axes):
-    def toggle_axisline(self, b):
-        warnings.warn("toggle_axisline is not necessary and deprecated in axes_grid1")
 
     class AxisDict(dict):
         def __init__(self, axes):
             self.axes = axes
-            super(Axes.AxisDict, self).__init__()
+            super().__init__()
 
         def __getitem__(self, k):
             if isinstance(k, tuple):
-                r = SimpleChainedObjects([dict.__getitem__(self, k1) for k1 in k])
+                r = SimpleChainedObjects(
+                    [super(Axes.AxisDict, self).__getitem__(k1) for k1 in k])
+                    # super() within a list comprehension needs explicit args
                 return r
             elif isinstance(k, slice):
-                if k.start == None and k.stop == None and k.step == None:
-                    r = SimpleChainedObjects(list(six.itervalues(self)))
-                    return r
+                if k.start is None and k.stop is None and k.step is None:
+                    return SimpleChainedObjects(list(self.values()))
                 else:
                     raise ValueError("Unsupported slice")
             else:
@@ -47,23 +40,15 @@ class Axes(maxes.Axes):
         def __call__(self, *v, **kwargs):
             return maxes.Axes.axis(self.axes, *v, **kwargs)
 
-
-    def __init__(self, *kl, **kw):
-        super(Axes, self).__init__(*kl, **kw)
-
-
-
     def _init_axis_artists(self, axes=None):
         if axes is None:
             axes = self
-
         self._axislines = self.AxisDict(self)
-
-        self._axislines["bottom"] = SimpleAxisArtist(self.xaxis, 1, self.spines["bottom"])
-        self._axislines["top"] = SimpleAxisArtist(self.xaxis, 2, self.spines["top"])
-        self._axislines["left"] = SimpleAxisArtist(self.yaxis, 1, self.spines["left"])
-        self._axislines["right"] = SimpleAxisArtist(self.yaxis, 2, self.spines["right"])
-
+        self._axislines.update(
+            bottom=SimpleAxisArtist(self.xaxis, 1, self.spines["bottom"]),
+            top=SimpleAxisArtist(self.xaxis, 2, self.spines["top"]),
+            left=SimpleAxisArtist(self.yaxis, 1, self.spines["left"]),
+            right=SimpleAxisArtist(self.yaxis, 2, self.spines["right"]))
 
     def _get_axislines(self):
         return self._axislines
@@ -71,8 +56,7 @@ class Axes(maxes.Axes):
     axis = property(_get_axislines)
 
     def cla(self):
-
-        super(Axes, self).cla()
+        super().cla()
         self._init_axis_artists()
 
 
@@ -93,13 +77,13 @@ class SimpleAxisArtist(Artist):
 
     def _get_major_ticks(self):
         tickline = "tick%dline" % self._axisnum
-        return SimpleChainedObjects([getattr(tick, tickline) for tick \
-                                     in self._axis.get_major_ticks()])
+        return SimpleChainedObjects([getattr(tick, tickline)
+                                     for tick in self._axis.get_major_ticks()])
 
     def _get_major_ticklabels(self):
         label = "label%d" % self._axisnum
-        return SimpleChainedObjects([getattr(tick, label) for tick \
-                                     in self._axis.get_major_ticks()])
+        return SimpleChainedObjects([getattr(tick, label)
+                                     for tick in self._axis.get_major_ticks()])
 
     def _get_label(self):
         return self._axis.label
@@ -153,7 +137,8 @@ class SimpleAxisArtist(Artist):
 
 
 if __name__ == '__main__':
-    fig = figure()
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
     ax = Axes(fig, [0.1, 0.1, 0.8, 0.8])
     fig.add_axes(ax)
     ax.cla()

@@ -1,40 +1,27 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
-from matplotlib import pyplot as plt
-from matplotlib.testing.decorators import cleanup
-from matplotlib.testing.decorators import knownfailureif
-from matplotlib._pylab_helpers import Gcf
 import copy
+from unittest import mock
 
-try:
-    # mock in python 3.3+
-    from unittest import mock
-except ImportError:
-    import mock
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib._pylab_helpers import Gcf
 
-try:
-    from matplotlib.backends.qt_compat import QtCore
-    from matplotlib.backends.backend_qt5 import (MODIFIER_KEYS,
-                                                 SUPER, ALT, CTRL, SHIFT)
+import pytest
 
-    _, ControlModifier, ControlKey = MODIFIER_KEYS[CTRL]
-    _, AltModifier, AltKey = MODIFIER_KEYS[ALT]
-    _, SuperModifier, SuperKey = MODIFIER_KEYS[SUPER]
-    _, ShiftModifier, ShiftKey = MODIFIER_KEYS[SHIFT]
-    HAS_QT = True
-except ImportError:
-    HAS_QT = False
+with matplotlib.rc_context(rc={'backend': 'Qt5Agg'}):
+    qt_compat = pytest.importorskip('matplotlib.backends.qt_compat',
+                                    minversion='5')
+from matplotlib.backends.backend_qt5 import (
+    MODIFIER_KEYS, SUPER, ALT, CTRL, SHIFT)  # noqa
+
+QtCore = qt_compat.QtCore
+_, ControlModifier, ControlKey = MODIFIER_KEYS[CTRL]
+_, AltModifier, AltKey = MODIFIER_KEYS[ALT]
+_, SuperModifier, SuperKey = MODIFIER_KEYS[SUPER]
+_, ShiftModifier, ShiftKey = MODIFIER_KEYS[SHIFT]
 
 
-@cleanup
-@knownfailureif(not HAS_QT)
+@pytest.mark.backend('Qt5Agg')
 def test_fig_close():
-    # force switch to the Qt5 backend
-    plt.switch_backend('Qt5Agg')
-
     # save the state of Gcf.figs
     init_figs = copy.copy(Gcf.figs)
 
@@ -47,17 +34,49 @@ def test_fig_close():
 
     # assert that we have removed the reference to the FigureManager
     # that got added by plt.figure()
-    assert(init_figs == Gcf.figs)
+    assert init_figs == Gcf.figs
 
 
-def assert_correct_key(qt_key, qt_mods, answer):
+@pytest.mark.parametrize(
+    'qt_key, qt_mods, answer',
+    [
+        (QtCore.Qt.Key_A, ShiftModifier, 'A'),
+        (QtCore.Qt.Key_A, QtCore.Qt.NoModifier, 'a'),
+        (QtCore.Qt.Key_A, ControlModifier, 'ctrl+a'),
+        (QtCore.Qt.Key_Aacute, ShiftModifier,
+         '\N{LATIN CAPITAL LETTER A WITH ACUTE}'),
+        (QtCore.Qt.Key_Aacute, QtCore.Qt.NoModifier,
+         '\N{LATIN SMALL LETTER A WITH ACUTE}'),
+        (ControlKey, AltModifier, 'alt+control'),
+        (AltKey, ControlModifier, 'ctrl+alt'),
+        (QtCore.Qt.Key_Aacute, (ControlModifier | AltModifier | SuperModifier),
+         'ctrl+alt+super+\N{LATIN SMALL LETTER A WITH ACUTE}'),
+        (QtCore.Qt.Key_Backspace, QtCore.Qt.NoModifier, 'backspace'),
+        (QtCore.Qt.Key_Backspace, ControlModifier, 'ctrl+backspace'),
+        (QtCore.Qt.Key_Play, QtCore.Qt.NoModifier, None),
+    ],
+    ids=[
+        'shift',
+        'lower',
+        'control',
+        'unicode_upper',
+        'unicode_lower',
+        'alt_control',
+        'control_alt',
+        'modifier_order',
+        'backspace',
+        'backspace_mod',
+        'non_unicode_key',
+    ]
+)
+@pytest.mark.backend('Qt5Agg')
+def test_correct_key(qt_key, qt_mods, answer):
     """
     Make a figure
     Send a key_press_event event (using non-public, qt5 backend specific api)
     Catch the event
     Assert sent and caught keys are the same
     """
-    plt.switch_backend('Qt5Agg')
     qt_canvas = plt.figure().canvas
 
     event = mock.Mock()
@@ -72,89 +91,84 @@ def assert_correct_key(qt_key, qt_mods, answer):
     qt_canvas.keyPressEvent(event)
 
 
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_shift():
-    assert_correct_key(QtCore.Qt.Key_A,
-                       ShiftModifier,
-                       'A')
+@pytest.mark.backend('Qt5Agg')
+def test_dpi_ratio_change():
+    """
+    Make sure that if _dpi_ratio changes, the figure dpi changes but the
+    widget remains the same physical size.
+    """
+
+    prop = 'matplotlib.backends.backend_qt5.FigureCanvasQT._dpi_ratio'
+
+    with mock.patch(prop, new_callable=mock.PropertyMock) as p:
+
+        p.return_value = 3
+
+        fig = plt.figure(figsize=(5, 2), dpi=120)
+        qt_canvas = fig.canvas
+        qt_canvas.show()
+
+        from matplotlib.backends.backend_qt5 import qApp
+
+        # Make sure the mocking worked
+        assert qt_canvas._dpi_ratio == 3
+
+        size = qt_canvas.size()
+
+        qt_canvas.manager.show()
+        qt_canvas.draw()
+        qApp.processEvents()
+
+        # The DPI and the renderer width/height change
+        assert fig.dpi == 360
+        assert qt_canvas.renderer.width == 1800
+        assert qt_canvas.renderer.height == 720
+
+        # The actual widget size and figure physical size don't change
+        assert size.width() == 600
+        assert size.height() == 240
+        assert qt_canvas.get_width_height() == (600, 240)
+        assert (fig.get_size_inches() == (5, 2)).all()
+
+        p.return_value = 2
+
+        assert qt_canvas._dpi_ratio == 2
+
+        qt_canvas.draw()
+        qApp.processEvents()
+        # this second processEvents is required to fully run the draw.
+        # On `update` we notice the DPI has changed and trigger a
+        # resize event to refresh, the second processEvents is
+        # required to process that and fully update the window sizes.
+        qApp.processEvents()
+
+        # The DPI and the renderer width/height change
+        assert fig.dpi == 240
+        assert qt_canvas.renderer.width == 1200
+        assert qt_canvas.renderer.height == 480
+
+        # The actual widget size and figure physical size don't change
+        assert size.width() == 600
+        assert size.height() == 240
+        assert qt_canvas.get_width_height() == (600, 240)
+        assert (fig.get_size_inches() == (5, 2)).all()
 
 
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_lower():
-    assert_correct_key(QtCore.Qt.Key_A,
-                       QtCore.Qt.NoModifier,
-                       'a')
+@pytest.mark.backend('Qt5Agg')
+def test_subplottool():
+    fig, ax = plt.subplots()
+    with mock.patch(
+            "matplotlib.backends.backend_qt5.SubplotToolQt.exec_",
+            lambda self: None):
+        fig.canvas.manager.toolbar.configure_subplots()
 
 
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_control():
-    assert_correct_key(QtCore.Qt.Key_A,
-                       ControlModifier,
-                       'ctrl+a')
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_unicode_upper():
-    assert_correct_key(QtCore.Qt.Key_Aacute,
-                       ShiftModifier,
-                       unichr(193))
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_unicode_lower():
-    assert_correct_key(QtCore.Qt.Key_Aacute,
-                       QtCore.Qt.NoModifier,
-                       unichr(225))
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_alt_control():
-    assert_correct_key(ControlKey,
-                       AltModifier,
-                       'alt+control')
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_control_alt():
-    assert_correct_key(AltKey,
-                       ControlModifier,
-                       'ctrl+alt')
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_modifier_order():
-    assert_correct_key(QtCore.Qt.Key_Aacute,
-                       (ControlModifier | AltModifier | SuperModifier),
-                       'ctrl+alt+super+' + unichr(225))
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_backspace():
-    assert_correct_key(QtCore.Qt.Key_Backspace,
-                       QtCore.Qt.NoModifier,
-                       'backspace')
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_backspace_mod():
-    assert_correct_key(QtCore.Qt.Key_Backspace,
-                       ControlModifier,
-                       'ctrl+backspace')
-
-
-@cleanup
-@knownfailureif(not HAS_QT)
-def test_non_unicode_key():
-    assert_correct_key(QtCore.Qt.Key_Play,
-                       QtCore.Qt.NoModifier,
-                       None)
+@pytest.mark.backend('Qt5Agg')
+def test_figureoptions():
+    fig, ax = plt.subplots()
+    ax.plot([1, 2])
+    ax.imshow([[1]])
+    with mock.patch(
+            "matplotlib.backends.qt_editor.formlayout.FormDialog.exec_",
+            lambda self: None):
+        fig.canvas.manager.toolbar.edit_parameters()

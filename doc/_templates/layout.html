@@ -38,8 +38,8 @@ endif %}>
         {%- endfor %}
 
         <li><a href="{{ pathto('index') }}">home</a>|&nbsp;</li>
-        <li><a href="{{ pathto('examples/index') }}">examples</a>|&nbsp;</li>
-        <li><a href="{{ pathto('gallery') }}">gallery</a>|&nbsp;</li>
+        <li><a href="{{ pathto('gallery/index') }}">examples</a>|&nbsp;</li>
+        <li><a href="{{ pathto('tutorials/index') }}">tutorials</a>|&nbsp;</li>
         <li><a href="{{ pathto('api/pyplot_summary') }}">pyplot</a>|&nbsp;</li>
         <li><a href="{{ pathto('contents') }}">docs</a> &raquo;</li>
 
@@ -69,23 +69,6 @@ alt="Logo"/>
             {%- for sidebartemplate in sidebars %}
             {%- include sidebartemplate %}
             {%- endfor %}
-          {%- else %}
-            {#- old style sidebars: using blocks -- should be deprecated #}
-            {%- block sidebartoc %}
-            {%- include "localtoc.html" %}
-            {%- endblock %}
-            {%- block sidebarrel %}
-            {%- include "relations.html" %}
-            {%- endblock %}
-            {%- block sidebarsourcelink %}
-            {%- include "sourcelink.html" %}
-            {%- endblock %}
-            {%- if customsidebar %}
-            {%- include customsidebar %}
-            {%- endif %}
-            {%- block sidebarsearch %}
-            {%- include "searchbox.html" %}
-            {%- endblock %}
           {%- endif %}
         </div>
       </div>
@@ -99,7 +82,8 @@ alt="Logo"/>
         VERSION:     '{{ release|e }}',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '{{ '' if no_search_suffix else file_suffix }}',
-        HAS_SOURCE:  {{ has_source|lower }}
+        HAS_SOURCE:  {{ has_source|lower }},
+        SOURCELINK_SUFFIX: '{{ sourcelink_suffix }}'
       };
     </script>
     {%- for scriptfile in script_files %}
@@ -169,8 +153,10 @@ parents[-1].link|e }}" />
 }}" />
     {%- endif %}
 {%- endblock %}
-{%- block extrahead %} {% endblock %}
-<link href="http://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+{%- block extrahead %}
+  <link rel="canonical" href="https://matplotlib.org/{{pagename}}.html" />
+{% endblock %}
+
 
   </head>
   <body>
@@ -178,17 +164,33 @@ parents[-1].link|e }}" />
 
 {% block relbar1 %}
 
-<link rel="shortcut icon" href="/_static/favicon.ico">
+{%- if '+' in release %}
+<div id="unreleased-message">
+    You are reading documentation for the unreleased version of Matplotlib.
+    <a href="https://matplotlib.org/search.html?q={{ title | striptags | urlencode }}&amp;check_keywords=yes&amp;area=default">
+        Try searching for the released version of this page instead?
+    </a>
+</div>
+{%- endif %}
+<div id="summer-fellowship">
+    Applications are open for the 2018 John Hunter Matplotlib Summer Fellowship.
+    <a href="https://www.numfocus.org/programs/john-hunter-technology-fellowship">
+        Apply now!
+    </a>
+</div>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px; position: relative;">
+{%- if builder in ('htmlhelp', 'devhelp', 'latex') %}
+<a href="{{ pathto('index') }}">
+    <div style="float: left; position: absolute; width: 496px; bottom: 0; padding-bottom: 24px"><span style="float: right; color: #789; background: white">Version {{ version|e }}</span></div>
+    <img src="{{pathto("_static/logo2.png", 1) }}" height="125px" border="0" alt="matplotlib"/></a>
+{%- else %}
+<a href="{{ pathto('index') }}">
+    <div style="float: left; position: absolute; width: 496px; bottom: 0; padding-bottom: 24px"><span style="float: right; color: #789; background: white">Version {{ version|e }}</span></div>
+    <img src="{{pathto("_static/logo2.png", 1) }}" height="125px" border="0" alt="matplotlib"/></a>
+{%- endif %}
 
 <!-- The "Fork me on github" ribbon -->
-<img style="float: right; margin-bottom: -40px; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" usemap="#ribbonmap"/>
-<map name="ribbonmap">
-    <area shape="poly" coords="15,0,148,-1,148,135" href="https://github.com/matplotlib/matplotlib" title="Fork me on GitHub" />
-</map>
-
-<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
-<a href="{{ pathto('index') }}"><img src="{{
-pathto("_static/logo2.png", 1) }}" border="0" alt="matplotlib"/></a>
+<div id="forkongithub"><a href="https://github.com/matplotlib/matplotlib">Fork me on GitHub</a></div>
 </div>
 
 {% endblock %}
@@ -205,7 +207,6 @@ pathto("_static/logo2.png", 1) }}" border="0" alt="matplotlib"/></a>
   {%- block sidebar1 %} {# possible location for sidebar #} {% endblock %}
 
   {%- block sidebar2 %}{{ sidebar() }}{% endblock %}
-
     <div class="document">
   {%- block document %}
       <div class="documentwrapper">
@@ -236,16 +237,132 @@ href="{{ path }}">Copyright</a> {{ copyright }}.{% endtrans %}
 endtrans %}
       {%- endif %}
     {%- endif %}
+        <br />
     {%- if last_updated %}
-      {% trans last_updated=last_updated|e %}Last updated on {{ last_updated
-}}.{% endtrans %}
+      {% trans last_updated=last_updated|e %}Last updated on {{ last_updated }}.{% endtrans %}
     {%- endif %}
     {%- if show_sphinx %}
-      {% trans sphinx_version=sphinx_version|e %}Created using <a
-href="http://sphinx-doc.org/">Sphinx</a> {{ sphinx_version }}.{% endtrans %}
+	{% trans sphinx_version=sphinx_version|e %}Created using
+	<ahref="http://sphinx-doc.org/">Sphinx</a> {{ sphinx_version }}.{% endtrans %}
+    {%- endif %}
+    {%- if sha %}
+	Doc version {{ sha }}.
     {%- endif %}
     </div>
-{%- endblock %}
+ {%- endblock %}
 
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-55954603-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
 </body>
+<footer>
+  <!--Flipcause Integration v3.0// Flipcause Integration Instructions:
+Install the following code block once in the website Header (after <head> tag) -->
+
+<style>
+
+.fc-black_overlay{
+display:none; position: fixed; z-index:1000001; top: 0%;left: 0%;width: 100%;height: 100%;
+background-color: black; filter: alpha(opacity=50); cursor:pointer; opacity:0.5;
+}
+
+.fc-white_content {
+opacity:1; display:none; margin-top: -320px; margin-left: -485px; width:970px; height:640px;
+position:fixed; top:50%; left:50%; border: none;z-index:1000002;overflow: auto;
+}
+
+.fc-main-box{
+opacity:1; display:none; margin:15px auto 0 auto; width:930px; position:relative; z-index:1000003;
+}
+
+.fc-widget_close{
+opacity:1; content:url(http://i1338.photobucket.com/albums/o691/WeCause/X_zpse4a7e538.png);
+position:absolute; z-index=1000004; right:-16px; top:-16px; display:block; cursor:pointer;
+}
+
+.floating_button{
+display: block; margin-top: 0px; margin-left: 0px; width:auto ; height: auto;
+position:fixed; z-index:999999; overflow: auto;
+}
+
+@keyframes backfadesin {
+   from { opacity:0; }
+   to {opacity:.5;}
+}
+
+@-moz-keyframes backfadesin {
+    from { opacity:0; }
+    to {opacity:.5;}
+}
+
+@-webkit-keyframes backfadesin {
+    from { opacity:0; }
+    to {opacity:.5;}
+}
+
+@-o-keyframes backfadesin {
+    from { opacity:0; }
+    to {opacity:.5;}
+}
+
+
+@-ms-keyframes backfadesin {
+    from { opacity:0; }
+    to {opacity:.5;}
+}
+
+@keyframes fadesin {
+   0%{ opacity:0; }
+   50%{ opacity:0; }
+   75% {opacity: 0; transform: translateY(20px);}
+   100% {opacity: 1; transform: translateY(0);}
+}
+
+@-moz-keyframes fadesin {
+   0%{ opacity:0; }
+   50%{ opacity:0; }
+   75% {opacity: 0; -moz-transform: translateY(20px);}
+   100% {opacity: 1; -moz-transform: translateY(0);}
+}
+
+@-webkit-keyframes fadesin {
+   0%{ opacity:0; }
+   50%{ opacity:0; }
+   75% {opacity: 0; -webkit-transform: translateY(20px);}
+   100% {opacity: 1; -webkit-transform: translateY(0);}
+}
+
+@-o-keyframes fadesin {
+   0%{ opacity:0; }
+   50%{ opacity:0; }
+   75% {opacity: 0; -o-transform: translateY(20px);}
+   100% {opacity: 1; -o-transform: translateY(0);}
+}
+
+@-ms-keyframes fadesin {
+   0%{ opacity:0; }
+   50%{ opacity:0; }
+   75% {opacity: 0; -ms-transform: translateY(20px);}
+   100% {opacity: 1; -ms-transform: translateY(0);}
+}
+
+</style>
+
+<div id="fc-fade" class="fc-black_overlay" onclick="close_window()"></div>
+<div id="fc-light" class="fc-white_content">
+<div id="fc-main" class="fc-main-box">
+<div id="fc-close" class="fc-widget_close" onclick="close_window()">
+</div><iframe id="fc-myFrame" iframe height="580" width="925" style="border: 0;
+border-radius:5px 5px 5px 5px; box-shadow:0 0 8px rgba(0, 0, 0, 0.5);" scrolling="no" src=""></iframe></div>
+</div>
+
+<!--END Flipcause Main Integration Code-->
+</footer>
 </html>

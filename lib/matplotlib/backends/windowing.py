@@ -5,13 +5,13 @@ With rcParams['tk.window_focus'] default of False, it is
 effectively disabled.
 
 It uses a tiny C++ extension module to access MS Win functions.
+
+This module is deprecated and will be removed in version 3.2
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 
-import six
+from matplotlib import rcParams, cbook
 
-from matplotlib import rcParams
+cbook.warn_deprecated('3.0', obj_type='module', name='backends.windowing')
 
 try:
     if not rcParams['tk.window_focus']:
@@ -23,7 +23,7 @@ except ImportError:
     def SetForegroundWindow(hwnd):
         pass
 
-class FocusManager:
+class FocusManager(object):
     def __init__(self):
         self._shellWindow = GetForegroundWindow()
 

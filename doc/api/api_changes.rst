@@ -1,15 +1,1518 @@
 
-===========
-API Changes
-===========
+=============
+ API Changes
+=============
 
-This chapter is a log of changes to matplotlib that affect the
-outward-facing API.  If updating matplotlib breaks your scripts, this
-list may help describe what changes may be necessary in your code or
-help figure out possible sources of the changes you are experiencing.
+Log of changes to Matplotlib that affect the outward-facing API.  If
+updating Matplotlib breaks your scripts, this list may help you figure
+out what caused the breakage and how to fix it by updating your code.
 
-For new features that were added to matplotlib, please see
+For new features that were added to Matplotlib, please see
 :ref:`whats-new`.
+
+.. for a release comment out the toctree below
+
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   next_api_changes/*
+
+
+API Changes in 2.2.0
+====================
+
+
+
+New dependency
+--------------
+
+`kiwisolver <https://github.com/nucleic/kiwi>`__ is now a required
+dependency to support the new constrained_layout,  see
+:doc:`/tutorials/intermediate/constrainedlayout_guide` for
+more details.
+
+
+Deprecations
+------------
+
+Classes, functions, and methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The unused and untested ``Artist.onRemove`` and ``Artist.hitlist`` methods have
+been deprecated.
+
+The now unused ``mlab.less_simple_linear_interpolation`` function is
+deprecated.
+
+The unused ``ContourLabeler.get_real_label_width`` method is deprecated.
+
+The unused ``FigureManagerBase.show_popup`` method is deprecated.  This
+introduced in e945059b327d42a99938b939a1be867fa023e7ba in 2005 but never built
+out into any of the backends.
+
+:class:`backend_tkagg.AxisMenu` is deprecated, as it has become
+unused since the removal of "classic" toolbars.
+
+
+Changed function signatures
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+kwarg ``fig`` to `.GridSpec.get_subplot_params` is
+deprecated,  use ``figure`` instead.
+
+Using `.pyplot.axes` with an `~matplotlib.axes.Axes` as argument is deprecated. This sets
+the current axes, i.e. it has the same effect as `.pyplot.sca`. For clarity
+``plt.sca(ax)`` should be preferred over ``plt.axes(ax)``.
+
+
+Using strings instead of booleans to control grid and tick visibility
+is deprecated.  Using ``"on"``, ``"off"``, ``"true"``, or ``"false"``
+to control grid and tick visibility has been deprecated.  Instead, use
+normal booleans (``True``/``False``) or boolean-likes.  In the future,
+all non-empty strings may be interpreted as ``True``.
+
+When given 2D inputs with non-matching numbers of columns, `~.pyplot.plot`
+currently cycles through the columns of the narrower input, until all the
+columns of the wider input have been plotted.  This behavior is deprecated; in
+the future, only broadcasting (1 column to *n* columns) will be performed.
+
+
+rcparams
+~~~~~~~~
+
+The :rc:`backend.qt4` and :rc:`backend.qt5` rcParams were deprecated
+in version 2.2.  In order to force the use of a specific Qt binding,
+either import that binding first, or set the ``QT_API`` environment
+variable.
+
+Deprecation of the ``nbagg.transparent`` rcParam.  To control
+transparency of figure patches in the nbagg (or any other) backend,
+directly set ``figure.patch.facecolor``, or the ``figure.facecolor``
+rcParam.
+
+Deprecated `Axis.unit_data`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use `Axis.units` (which has long existed) instead.
+
+
+Removals
+--------
+
+Function Signatures
+~~~~~~~~~~~~~~~~~~~
+
+Contouring no longer supports ``legacy`` corner masking.  The
+deprecated ``ContourSet.vmin`` and ``ContourSet.vmax`` properties have
+been removed.
+
+Passing ``None`` instead of ``"none"`` as format to `~.Axes.errorbar` is no
+longer supported.
+
+The ``bgcolor`` keyword argument to ``Axes`` has been removed.
+
+Modules, methods, and functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``matplotlib.finance``, ``mpl_toolkits.exceltools`` and
+``mpl_toolkits.gtktools`` modules have been removed.  ``matplotlib.finance``
+remains available at https://github.com/matplotlib/mpl_finance.
+
+The ``mpl_toolkits.mplot3d.art3d.iscolor`` function has been removed.
+
+The ``Axes.get_axis_bgcolor``, ``Axes.set_axis_bgcolor``,
+``Bbox.update_from_data``, ``Bbox.update_datalim_numerix``,
+``MaxNLocator.bin_boundaries`` methods have been removed.
+
+``mencoder`` can no longer be used to encode animations.
+
+The unused `FONT_SCALE` and `fontd` attributes of the `RendererSVG`
+class have been removed.
+
+color maps
+~~~~~~~~~~
+
+The ``spectral`` colormap has been removed.  The ``Vega*`` colormaps, which
+were aliases for the ``tab*`` colormaps, have been removed.
+
+
+rcparams
+~~~~~~~~
+
+The following deprecated rcParams have been removed:
+
+- ``axes.color_cycle`` (see ``axes.prop_cycle``),
+- ``legend.isaxes``,
+- ``svg.embed_char_paths`` (see ``svg.fonttype``),
+- ``text.fontstyle``, ``text.fontangle``, ``text.fontvariant``,
+  ``text.fontweight``, ``text.fontsize`` (renamed to ``text.style``, etc.),
+- ``tick.size`` (renamed to ``tick.major.size``).
+
+
+
+Only accept string-like for Categorical input
+---------------------------------------------
+
+Do not accept mixed string / float / int input, only
+strings are valid categoricals.
+
+Removal of unused imports
+-------------------------
+Many unused imports were removed from the codebase.  As a result,
+trying to import certain classes or functions from the "wrong" module
+(e.g. `~.Figure` from :mod:`matplotlib.backends.backend_agg` instead of
+:mod:`matplotlib.figure`) will now raise an `ImportError`.
+
+
+``Axes3D.get_xlim``, ``get_ylim`` and ``get_zlim`` now return a tuple
+---------------------------------------------------------------------
+
+They previously returned an array.  Returning a tuple is consistent with the
+behavior for 2D axes.
+
+
+Exception type changes
+----------------------
+
+If `MovieWriterRegistry` can't find the requested `MovieWriter`, a
+more helpful `RuntimeError` message is now raised instead of the
+previously raised `KeyError`.
+
+`~.tight_layout.auto_adjust_subplotpars` now raises `ValueError`
+instead of `RuntimeError` when sizes of input lists don't match
+
+
+`Figure.set_figwidth` and `Figure.set_figheight` default forward to True
+------------------------------------------------------------------------
+
+`matplotlib.Figure.set_figwidth` and `matplotlib.Figure.set_figheight`
+had the kwarg `forward=False`
+by default, but `Figure.set_size_inches` now defaults to `forward=True`.
+This makes these functions conistent.
+
+
+Do not truncate svg sizes to nearest point
+------------------------------------------
+
+There is no reason to size the SVG out put in integer points, change
+to out putting floats for the *height*, *width*, and *viewBox* attributes
+of the *svg* element.
+
+
+Fontsizes less than 1 pt are clipped to be 1 pt.
+------------------------------------------------
+
+FreeType doesn't allow fonts to get smaller than 1 pt, so all Agg
+backends were silently rounding up to 1 pt.  PDF (other vector
+backends?) were letting us write fonts that were less than 1 pt, but
+they could not be placed properly because position information comes from
+FreeType.  This change makes it so no backends can use fonts smaller than
+1 pt, consistent with FreeType and ensuring more consistent results across
+backends.
+
+
+
+Changes to Qt backend class MRO
+-------------------------------
+
+To support both Agg and cairo rendering for Qt backends all of the
+non-Agg specific code previously in
+:class:`.backend_qt5agg.FigureCanvasQTAggBase` has been moved to
+:class:`.backend_qt5.FigureCanvasQT` so it can be shared with the cairo
+implementation.  The :meth:`.FigureCanvasQTAggBase.paintEvent`,
+:meth:`.FigureCanvasQTAggBase.blit`, and
+:meth:`.FigureCanvasQTAggBase.print_figure` methods have moved to
+:meth:`.FigureCanvasQTAgg.paintEvent`, :meth:`.FigureCanvasQTAgg.blit`, and
+:meth:`.FigureCanvasQTAgg.print_figure`.  The first two methods assume that
+the instance is also a :class:`QWidget` so to use
+:class:`FigureCanvasQTAggBase` it was required to multiple inherit
+from a :class:`QWidget` sub-class.
+
+Having moved all of its methods either up or down the class hierarchy
+:class:`FigureCanvasQTAggBase` has been deprecated.  To do this with
+out warning and to preserve as much API as possible,
+:class:`.backend_qt5.FigureCanvasQTAggBase` now inherits from
+:class:`.backend_qt5.FigureCanvasQTAgg`.
+
+The MRO for :class:`FigureCanvasQTAgg` and
+:class:`FigureCanvasQTAggBase` used to be ::
+
+
+   [matplotlib.backends.backend_qt5agg.FigureCanvasQTAgg,
+    matplotlib.backends.backend_qt5agg.FigureCanvasQTAggBase,
+    matplotlib.backends.backend_agg.FigureCanvasAgg,
+    matplotlib.backends.backend_qt5.FigureCanvasQT,
+    PyQt5.QtWidgets.QWidget,
+    PyQt5.QtCore.QObject,
+    sip.wrapper,
+    PyQt5.QtGui.QPaintDevice,
+    sip.simplewrapper,
+    matplotlib.backend_bases.FigureCanvasBase,
+    object]
+
+and ::
+
+
+   [matplotlib.backends.backend_qt5agg.FigureCanvasQTAggBase,
+    matplotlib.backends.backend_agg.FigureCanvasAgg,
+    matplotlib.backend_bases.FigureCanvasBase,
+    object]
+
+
+respectively.  They are now ::
+
+   [matplotlib.backends.backend_qt5agg.FigureCanvasQTAgg,
+    matplotlib.backends.backend_agg.FigureCanvasAgg,
+    matplotlib.backends.backend_qt5.FigureCanvasQT,
+    PyQt5.QtWidgets.QWidget,
+    PyQt5.QtCore.QObject,
+    sip.wrapper,
+    PyQt5.QtGui.QPaintDevice,
+    sip.simplewrapper,
+    matplotlib.backend_bases.FigureCanvasBase,
+    object]
+
+and ::
+
+   [matplotlib.backends.backend_qt5agg.FigureCanvasQTAggBase,
+    matplotlib.backends.backend_qt5agg.FigureCanvasQTAgg,
+    matplotlib.backends.backend_agg.FigureCanvasAgg,
+    matplotlib.backends.backend_qt5.FigureCanvasQT,
+    PyQt5.QtWidgets.QWidget,
+    PyQt5.QtCore.QObject,
+    sip.wrapper,
+    PyQt5.QtGui.QPaintDevice,
+    sip.simplewrapper,
+    matplotlib.backend_bases.FigureCanvasBase,
+    object]
+
+
+
+
+`Axes.imshow` clips RGB values to the valid range
+-------------------------------------------------
+
+When `Axes.imshow` is passed an RGB or RGBA value with out-of-range
+values, it now logs a warning and clips them to the valid range.
+The old behaviour, wrapping back in to the range, often hid outliers
+and made interpreting RGB images unreliable.
+
+
+GTKAgg and GTKCairo backends deprecated
+---------------------------------------
+
+The GTKAgg and GTKCairo backends have been deprecated. These obsolete backends
+allow figures to be rendered via the GTK+ 2 toolkit. They are untested, known
+to be broken, will not work with Python 3, and their use has been discouraged
+for some time. Instead, use the `GTK3Agg` and `GTK3Cairo` backends for
+rendering to GTK+ 3 windows.
+
+
+
+API Changes in 2.1.2
+====================
+
+`Figure.legend` no longer checks for repeated lines to ignore
+-------------------------------------------------------------
+
+`matplotlib.Figure.legend` used to check if a line had the
+same label as an existing legend entry. If it also had the same line color
+or marker color legend didn't add a new entry for that line. However, the
+list of conditions was incomplete, didn't handle RGB tuples,
+didn't handle linewidths or linestyles etc.
+
+This logic did not exist in `Axes.legend`.  It was included (erroneously)
+in Matplotlib 2.1.1 when the legend argument parsing was unified
+[#9324](https://github.com/matplotlib/matplotlib/pull/9324).  This change
+removes that check in `Axes.legend` again to restore the old behavior.
+
+This logic has also been dropped from `.Figure.legend`, where it
+was previously undocumented. Repeated
+lines with the same label will now each have an entry in the legend.  If
+you do not want the duplicate entries, don't add a label to the line, or
+prepend the label with an underscore.
+
+API Changes in 2.1.1
+====================
+
+Default behavior of log scales reverted to clip <= 0 values
+-----------------------------------------------------------
+
+The change it 2.1.0 to mask in logscale by default had more disruptive
+changes than anticipated and has been reverted, however the clipping is now
+done in a way that fixes the issues that motivated changing the default behavior
+to ``'mask'``.
+
+As a side effect of this change, error bars which go negative now work as expected
+on log scales.
+
+API Changes in 2.1.0
+====================
+
+
+Default behavior of log scales changed to mask <= 0 values
+----------------------------------------------------------
+
+Calling `matplotlib.axes.Axes.set_xscale` or `matplotlib.axes.Axes.set_yscale`
+now uses 'mask' as the default method to handle invalid values (as opposed to
+'clip'). This means that any values <= 0 on a log scale will not be shown.
+
+Previously they were clipped to a very small number and shown.
+
+
+:meth:`matplotlib.cbook.CallbackRegistry.process` suppresses exceptions by default
+----------------------------------------------------------------------------------
+
+Matplotlib uses instances of :obj:`~matplotlib.cbook.CallbackRegistry`
+as a bridge between user input event from the GUI and user callbacks.
+Previously, any exceptions raised in a user call back would bubble out
+of of the ``process`` method, which is typically in the GUI event
+loop.  Most GUI frameworks simple print the traceback to the screen
+and continue as there is not always a clear method of getting the
+exception back to the user.  However PyQt5 now exits the process when
+it receives an un-handled python exception in the event loop.  Thus,
+:meth:`~matplotlib.cbook.CallbackRegistry.process` now suppresses and
+prints tracebacks to stderr by default.
+
+What :meth:`~matplotlib.cbook.CallbackRegistry.process` does with exceptions
+is now user configurable via the ``exception_handler`` attribute and kwarg.  To
+restore the previous behavior pass ``None`` ::
+
+  cb = CallbackRegistry(exception_handler=None)
+
+
+A function which take and ``Exception`` as its only argument may also be passed ::
+
+  def maybe_reraise(exc):
+      if isinstance(exc, RuntimeError):
+          pass
+      else:
+          raise exc
+
+  cb = CallbackRegistry(exception_handler=maybe_reraise)
+
+
+
+Improved toggling of the axes grids
+-----------------------------------
+
+The `g` key binding now switches the states of the `x` and `y` grids
+independently (by cycling through all four on/off combinations).
+
+The new `G` key binding switches the states of the minor grids.
+
+Both bindings are disabled if only a subset of the grid lines (in either
+direction) is visible, to avoid making irreversible changes to the figure.
+
+
+Ticklabels are turned off instead of being invisible
+----------------------------------------------------
+
+Internally, the `Tick`'s :func:`~matplotlib.axis.Tick.label1On` attribute
+is now used to hide tick labels instead of setting the visibility on the tick
+label objects.
+This improves overall performance and fixes some issues.
+As a consequence, in case those labels ought to be shown,
+:func:`~matplotlib.axes.Axes.tick_params`
+needs to be used, e.g.
+
+::
+
+    ax.tick_params(labelbottom=True)
+
+
+Removal of warning on empty legends
+-----------------------------------
+
+``plt.legend`` used to issue a warning when no labeled artist could be
+found.  This warning has been removed.
+
+
+More accurate legend autopositioning
+------------------------------------
+
+Automatic positioning of legends now prefers using the area surrounded
+by a `Line2D` rather than placing the legend over the line itself.
+
+
+Cleanup of stock sample data
+----------------------------
+
+The sample data of stocks has been cleaned up to remove redundancies and
+increase portability. The ``AAPL.dat.gz``, ``INTC.dat.gz`` and ``aapl.csv``
+files have been removed entirely and will also no longer be available from
+`matplotlib.cbook.get_sample_data`. If a CSV file is required, we suggest using
+the ``msft.csv`` that continues to be shipped in the sample data. If a NumPy
+binary file is acceptable, we suggest using one of the following two new files.
+The ``aapl.npy.gz`` and ``goog.npy`` files have been replaced by ``aapl.npz``
+and ``goog.npz``, wherein the first column's type has changed from
+`datetime.date` to `np.datetime64` for better portability across Python
+versions. Note that Matplotlib does not fully support `np.datetime64` as yet.
+
+
+Updated qhull to 2015.2
+-----------------------
+
+The version of qhull shipped with Matplotlib, which is used for
+Delaunay triangulation, has been updated from version 2012.1 to
+2015.2.
+
+Improved Delaunay triangulations with large offsets
+---------------------------------------------------
+
+Delaunay triangulations now deal with large x,y offsets in a better
+way. This can cause minor changes to any triangulations calculated
+using Matplotlib, i.e. any use of `matplotlib.tri.Triangulation` that
+requests that a Delaunay triangulation is calculated, which includes
+`matplotlib.pyplot.tricontour`, `matplotlib.pyplot.tricontourf`,
+`matplotlib.pyplot.tripcolor`, `matplotlib.pyplot.triplot`,
+`matplotlib.mlab.griddata` and
+`mpl_toolkits.mplot3d.axes3d.Axes3D.plot_trisurf`.
+
+
+
+Use ``backports.functools_lru_cache`` instead of ``functools32``
+----------------------------------------------------------------
+
+It's better maintained and more widely used (by pylint, jaraco, etc).
+
+
+
+``cbook.is_numlike`` only performs an instance check
+----------------------------------------------------
+
+:func:`~matplotlib.cbook.is_numlike` now only checks that its argument
+is an instance of ``(numbers.Number, np.Number)``.  In particular,
+this means that arrays are now not num-like.
+
+
+
+Elliptical arcs now drawn between correct angles
+------------------------------------------------
+
+The `matplotlib.patches.Arc` patch is now correctly drawn between the given
+angles.
+
+Previously a circular arc was drawn and then stretched into an ellipse,
+so the resulting arc did not lie between *theta1* and *theta2*.
+
+
+
+``-d$backend`` no longer sets the backend
+-----------------------------------------
+
+It is no longer possible to set the backend by passing ``-d$backend``
+at the command line.  Use the ``MPLBACKEND`` environment variable
+instead.
+
+
+Path.intersects_bbox always treats the bounding box as filled
+-------------------------------------------------------------
+
+Previously, when ``Path.intersects_bbox`` was called with ``filled`` set to
+``False``, it would treat both the path and the bounding box as unfilled. This
+behavior was not well documented and it is usually not the desired behavior,
+since bounding boxes are used to represent more complex shapes located inside
+the bounding box. This behavior has now been changed: when ``filled`` is
+``False``, the path will be treated as unfilled, but the bounding box is still
+treated as filled. The old behavior was arguably an implementation bug.
+
+When ``Path.intersects_bbox`` is called with ``filled`` set to ``True``
+(the default value), there is no change in behavior. For those rare cases where
+``Path.intersects_bbox`` was called with ``filled`` set to ``False`` and where
+the old behavior is actually desired, the suggested workaround is to call
+``Path.intersects_path`` with a rectangle as the path::
+
+    from matplotlib.path import Path
+    from matplotlib.transforms import Bbox, BboxTransformTo
+    rect = Path.unit_rectangle().transformed(BboxTransformTo(bbox))
+    result = path.intersects_path(rect, filled=False)
+
+
+
+
+WX no longer calls generates ``IdleEvent`` events or calls ``idle_event``
+-------------------------------------------------------------------------
+
+Removed unused private method ``_onIdle`` from ``FigureCanvasWx``.
+
+The ``IdleEvent`` class and ``FigureCanvasBase.idle_event`` method
+will be removed in 2.2
+
+
+
+Correct scaling of :func:`magnitude_spectrum()`
+-----------------------------------------------
+
+The functions :func:`matplotlib.mlab.magnitude_spectrum()` and :func:`matplotlib.pyplot.magnitude_spectrum()` implicitly assumed the sum
+of windowing function values to be one. In Matplotlib and Numpy the
+standard windowing functions are scaled to have maximum value of one,
+which usually results in a sum of the order of n/2 for a n-point
+signal. Thus the amplitude scaling :func:`magnitude_spectrum()` was
+off by that amount when using standard windowing functions (`Bug 8417
+<https://github.com/matplotlib/matplotlib/issues/8417>`_ ). Now the
+behavior is consistent with :func:`matplotlib.pyplot.psd()` and
+:func:`scipy.signal.welch()`. The following example demonstrates the
+new and old scaling::
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    tau, n = 10, 1024  # 10 second signal with 1024 points
+    T = tau/n  # sampling interval
+    t = np.arange(n)*T
+
+    a = 4  # amplitude
+    x = a*np.sin(40*np.pi*t)  # 20 Hz sine with amplitude a
+
+    # New correct behavior: Amplitude at 20 Hz is a/2
+    plt.magnitude_spectrum(x, Fs=1/T, sides='onesided', scale='linear')
+
+    # Original behavior: Amplitude at 20 Hz is (a/2)*(n/2) for a Hanning window
+    w = np.hanning(n)  # default window is a Hanning window
+    plt.magnitude_spectrum(x*np.sum(w), Fs=1/T, sides='onesided', scale='linear')
+
+
+
+
+
+Change to signatures of :meth:`~matplotlib.axes.Axes.bar` & :meth:`~matplotlib.axes.Axes.barh`
+----------------------------------------------------------------------------------------------
+
+For 2.0 the :ref:`default value of *align* <barbarh_align>` changed to
+``'center'``.  However this caused the signature of
+:meth:`~matplotlib.axes.Axes.bar` and
+:meth:`~matplotlib.axes.Axes.barh` to be misleading as the first parameters were
+still *left* and *bottom* respectively::
+
+  bar(left, height, *, align='center', **kwargs)
+  barh(bottom, width, *, align='center', **kwargs)
+
+despite behaving as the center in both cases. The methods now take
+``*args, **kwargs`` as input and are documented to have the primary
+signatures of::
+
+  bar(x, height, *, align='center', **kwargs)
+  barh(y, width, *, align='center', **kwargs)
+
+Passing *left* and *bottom* as keyword arguments to
+:meth:`~matplotlib.axes.Axes.bar` and
+:meth:`~matplotlib.axes.Axes.barh` respectively will warn.
+Support will be removed in Matplotlib 3.0.
+
+
+Font cache as json
+------------------
+
+The font cache is now saved as json, rather than a pickle.
+
+
+Invalid (Non-finite) Axis Limit Error
+-------------------------------------
+
+When using :func:`~matplotlib.axes.Axes.set_xlim` and
+:func:`~matplotlib.axes.Axes.set_ylim`, passing non-finite values now
+results in a ``ValueError``. The previous behavior resulted in the
+limits being erroneously reset to ``(-0.001, 0.001)``.
+
+``scatter`` and ``Collection`` offsets are no longer implicitly flattened
+-------------------------------------------------------------------------
+
+`~matplotlib.collections.Collection` (and thus both 2D
+`~matplotlib.axes.Axes.scatter` and 3D
+`~mpl_toolkits.mplot3d.axes3d.Axes3D.scatter`) no
+longer implicitly flattens its offsets.  As a consequence, ``scatter``'s ``x``
+and ``y`` arguments can no longer be 2+-dimensional arrays.
+
+Deprecations
+------------
+
+``GraphicsContextBase``\'s ``linestyle`` property.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``GraphicsContextBase.get_linestyle`` and
+``GraphicsContextBase.set_linestyle`` methods, which had no effect,
+have been deprecated.  All of the backends Matplotlib ships use
+``GraphicsContextBase.get_dashes`` and
+``GraphicsContextBase.set_dashes`` which are more general.
+Third-party backends should also migrate to the ``*_dashes`` methods.
+
+
+``NavigationToolbar2.dynamic_update``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use :meth:`draw_idle` method on the ``Canvas`` instance instead.
+
+
+Testing
+~~~~~~~
+
+`matplotlib.testing.noseclasses` is deprecated and will be removed in 2.3
+
+
+``EngFormatter`` *num* arg as string
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Passing a string as *num* argument when calling an instance of
+`matplotlib.ticker.EngFormatter` is deprecated and will be removed in 2.3.
+
+
+``mpl_toolkits.axes_grid`` module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All functionally from `mpl_toolkits.axes_grid` can be found in either
+`mpl_toolkits.axes_grid1` or `mpl_toolkits.axisartist`. Axes classes
+from `mpl_toolkits.axes_grid` based on `Axis` from
+`mpl_toolkits.axisartist` can be found in `mpl_toolkits.axisartist`.
+
+
+``Axes`` collision in ``Figure.add_axes``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Adding an axes instance to a figure by using the same arguments as for
+a previous axes instance currently reuses the earlier instance.  This
+behavior has been deprecated in Matplotlib 2.1. In a future version, a
+*new* instance will always be created and returned.  Meanwhile, in such
+a situation, a deprecation warning is raised by
+:class:`~matplotlib.figure.AxesStack`.
+
+This warning can be suppressed, and the future behavior ensured, by passing
+a *unique* label to each axes instance.  See the docstring of
+:meth:`~matplotlib.figure.Figure.add_axes` for more information.
+
+Additional details on the rationale behind this deprecation can be found
+in :ghissue:`7377` and :ghissue:`9024`.
+
+
+Former validators for ``contour.negative_linestyle``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+The former public validation functions ``validate_negative_linestyle``
+and ``validate_negative_linestyle_legacy`` will be deprecated in 2.1 and
+may be removed in 2.3. There are no public functions to replace them.
+
+
+
+``cbook``
+~~~~~~~~~
+
+Many unused or near-unused :mod:`matplotlib.cbook` functions and
+classes have been deprecated: ``converter``, ``tostr``,
+``todatetime``, ``todate``, ``tofloat``, ``toint``, ``unique``,
+``is_string_like``, ``is_sequence_of_strings``, ``is_scalar``,
+``Sorter``, ``Xlator``, ``soundex``, ``Null``, ``dict_delall``,
+``RingBuffer``, ``get_split_ind``, ``wrap``,
+``get_recursive_filelist``, ``pieces``, ``exception_to_str``,
+``allequal``, ``alltrue``, ``onetrue``, ``allpairs``, ``finddir``,
+``reverse_dict``, ``restrict_dict``, ``issubclass_safe``,
+``recursive_remove``, ``unmasked_index_ranges``.
+
+
+Code Removal
+------------
+
+qt4_compat.py
+~~~~~~~~~~~~~
+
+Moved to ``qt_compat.py``.  Renamed because it now handles Qt5 as well.
+
+
+Previously Deprecated methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``GraphicsContextBase.set_graylevel``, ``FigureCanvasBase.onHilite`` and
+``mpl_toolkits.axes_grid1.mpl_axes.Axes.toggle_axisline`` methods have been
+removed.
+
+The ``ArtistInspector.findobj`` method, which was never working due to the lack
+of a ``get_children`` method, has been removed.
+
+The deprecated ``point_in_path``, ``get_path_extents``,
+``point_in_path_collection``, ``path_intersects_path``,
+``convert_path_to_polygons``, ``cleanup_path`` and ``clip_path_to_rect``
+functions in the ``matplotlib.path`` module have been removed.  Their
+functionality remains exposed as methods on the ``Path`` class.
+
+The deprecated ``Artist.get_axes`` and ``Artist.set_axes`` methods
+have been removed
+
+
+The ``matplotlib.backends.backend_ps.seq_allequal`` function has been removed.
+Use ``np.array_equal`` instead.
+
+The deprecated ``matplotlib.rcsetup.validate_maskedarray``,
+``matplotlib.rcsetup.deprecate_savefig_extension`` and
+``matplotlib.rcsetup.validate_tkpythoninspect`` functions, and associated
+``savefig.extension`` and ``tk.pythoninspect`` rcparams entries have been
+removed.
+
+
+The kwarg ``resolution`` of
+:class:`matplotlib.projections.polar.PolarAxes` has been removed. It
+has deprecation with no effect from version `0.98.x`.
+
+
+``Axes.set_aspect("normal")``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Support for setting an ``Axes``\'s aspect to ``"normal"`` has been
+removed, in favor of the synonym ``"auto"``.
+
+
+``shading`` kwarg to ``pcolor``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``shading`` kwarg to `~matplotlib.axes.Axes.pcolor` has been
+removed.  Set ``edgecolors`` appropriately instead.
+
+
+Functions removed from the `lines` module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :mod:`matplotlib.lines` module no longer imports the
+``pts_to_prestep``, ``pts_to_midstep`` and ``pts_to_poststep``
+functions from :mod:`matplotlib.cbook`.
+
+
+PDF backend functions
+~~~~~~~~~~~~~~~~~~~~~
+
+The methods ``embedTeXFont`` and ``tex_font_mapping`` of
+:class:`matplotlib.backqend_pdf.PdfFile` have been removed.  It is
+unlikely that external users would have called these methods, which
+are related to the font system internal to the PDF backend.
+
+
+matplotlib.delaunay
+~~~~~~~~~~~~~~~~~~~
+
+Remove the delaunay triangulation code which is now handled by Qhull
+via :mod:`matplotlib.tri`.
+
+API Changes in 2.0.1
+====================
+
+Extensions to `matplotlib.backend_bases.GraphicsContextBase`
+------------------------------------------------------------
+
+To better support controlling the color of hatches, the method
+`matplotlib.backend_bases.GraphicsContextBase.set_hatch_color` was
+added to the expected API of ``GraphicsContext`` classes.  Calls to
+this method are currently wrapped with a ``try:...except Attribute:``
+block to preserve back-compatibility with any third-party backends
+which do not extend `~matplotlib.backend_bases.GraphicsContextBase`.
+
+This value can be accessed in the backends via
+`matplotlib.backend_bases.GraphicsContextBase.get_hatch_color` (which
+was added in 2.0 see :ref:`gc_get_hatch_color_wn`) and should be used
+to color the hatches.
+
+In the future there may also be ``hatch_linewidth`` and
+``hatch_density`` related methods added.  It is encouraged, but not
+required that third-party backends extend
+`~matplotlib.backend_bases.GraphicsContextBase` to make adapting to
+these changes easier.
+
+
+`afm.get_fontconfig_fonts` returns a list of paths and does not check for existence
+-----------------------------------------------------------------------------------
+
+`afm.get_fontconfig_fonts` used to return a set of paths encoded as a
+``{key: 1, ...}`` dict, and checked for the existence of the paths.  It now
+returns a list and dropped the existence check, as the same check is performed
+by the caller (`afm.findSystemFonts`) as well.
+
+
+`bar` now returns rectangles of negative height or width if the corresponding input is negative
+-----------------------------------------------------------------------------------------------
+
+`plt.bar` used to normalize the coordinates of the rectangles that it created,
+to keep their height and width positives, even if the corresponding input was
+negative.  This normalization has been removed to permit a simpler computation
+of the correct `sticky_edges` to use.
+
+
+Do not clip line width when scaling dashes
+------------------------------------------
+
+The algorithm to scale dashes was changed to no longer clip the
+scaling factor: the dash patterns now continue to shrink at thin line widths.
+If the line width is smaller than the effective pixel size, this may result in
+dashed lines turning into solid gray-ish lines.  This also required slightly
+tweaking the default patterns for '--', ':', and '.-' so that with the default
+line width the final patterns would not change.
+
+There is no way to restore the old behavior.
+
+
+Deprecate 'Vega' color maps
+---------------------------
+
+The "Vega" colormaps are deprecated in Matplotlib 2.0.1 and will be
+removed in Matplotlib 2.2. Use the "tab" colormaps instead: "tab10",
+"tab20", "tab20b", "tab20c".
+
+
+API Changes in 2.0.0
+====================
+
+Deprecation and removal
+-----------------------
+
+Color of Axes
+~~~~~~~~~~~~~
+The ``axisbg`` and ``axis_bgcolor`` properties on *Axes* have been
+deprecated in favor of ``facecolor``.
+
+GTK and GDK backends deprecated
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The GDK and GTK backends have been deprecated. These obsolete backends
+allow figures to be rendered via the GDK API to files and GTK2 figures.
+They are untested and known to be broken, and their use has been
+discouraged for some time.  Instead, use the `GTKAgg` and `GTKCairo`
+backends for rendering to GTK2 windows.
+
+WX backend deprecated
+~~~~~~~~~~~~~~~~~~~~~
+The WX backend has been deprecated.  It is untested, and its
+use has been discouraged for some time. Instead, use the `WXAgg`
+backend for rendering figures to WX windows.
+
+CocoaAgg backend removed
+~~~~~~~~~~~~~~~~~~~~~~~~
+The deprecated and not fully functional CocoaAgg backend has been removed.
+
+`round` removed from TkAgg Backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The TkAgg backend had its own implementation of the `round` function. This
+was unused internally and has been removed. Instead, use either the
+`round` builtin function or `numpy.round`.
+
+'hold' functionality deprecated
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The 'hold' keyword argument and all functions and methods related
+to it are deprecated, along with the 'axes.hold' `rcParams` entry.
+The behavior will remain consistent with the default ``hold=True``
+state that has long been in place.  Instead of using a function
+or keyword argument (``hold=False``) to change that behavior,
+explicitly clear the axes or figure as needed prior to subsequent
+plotting commands.
+
+
+`Artist.update` has return value
+--------------------------------
+
+The methods `matplotlib.artist.Artist.set`,
+`matplotlib.Artist.update`, and the function `matplotlib.artist.setp`
+now use a common codepath to look up how to update the given artist
+properties (either using the setter methods or an attribute/property).
+
+The behavior of `matplotlib.Artist.update` is slightly changed to
+return a list of the values returned from the setter methods to avoid
+changing the API of `matplotlib.Artist.set` and
+`matplotlib.artist.setp`.
+
+The keys passed into `matplotlib.Artist.update` are now converted to
+lower case before being processed, to match the behavior of
+`matplotlib.Artist.set` and `matplotlib.artist.setp`.  This should not
+break any user code because there are no set methods with capitals in
+their names, but this puts a constraint on naming properties in the future.
+
+
+`Legend` initializers gain edgecolor and facecolor kwargs
+---------------------------------------------------------
+
+The :class:`~matplotlib.legend.Legend` background patch (or 'frame')
+can have its ``edgecolor`` and ``facecolor`` determined by the
+corresponding keyword arguments to the :class:`matplotlib.legend.Legend`
+initializer, or to any of the methods or functions that call that
+initializer.  If left to their default values of `None`, their values
+will be taken from ``matplotlib.rcParams``.  The previously-existing
+``framealpha`` kwarg still controls the alpha transparency of the
+patch.
+
+
+Qualitative colormaps
+---------------------
+
+Colorbrewer's qualitative/discrete colormaps ("Accent", "Dark2", "Paired",
+"Pastel1", "Pastel2", "Set1", "Set2", "Set3") are now implemented as
+``ListedColormap`` instead of ``LinearSegmentedColormap``.
+
+To use these for images where categories are specified as integers, for
+instance, use::
+
+    plt.imshow(x, cmap='Dark2', norm=colors.NoNorm())
+
+
+Change in the ``draw_image`` backend API
+----------------------------------------
+
+The ``draw_image`` method implemented by backends has changed its interface.
+
+This change is only relevant if the backend declares that it is able
+to transform images by returning ``True`` from ``option_scale_image``.
+See the ``draw_image`` docstring for more information.
+
+
+
+`matplotlib.ticker.LinearLocator` algorithm update
+--------------------------------------------------
+
+The ``matplotlib.ticker.LinearLocator`` is used to define the range and
+location of axis ticks when the user wants an exact number of ticks.
+``LinearLocator`` thus differs from the default locator ``MaxNLocator``,
+for which the user specifies a maximum number of intervals rather than
+a precise number of ticks.
+
+The view range algorithm in ``matplotlib.ticker.LinearLocator`` has been
+changed so that more convenient tick locations are chosen. The new algorithm
+returns a plot view range that is a multiple of the user-requested number of
+ticks. This ensures tick marks will be located at whole integers more
+consistently. For example, when both y-axes of a``twinx`` plot use
+``matplotlib.ticker.LinearLocator`` with the same number of ticks,
+their y-tick locations and grid lines will coincide.
+
+`matplotlib.ticker.LogLocator` gains numticks kwarg
+---------------------------------------------------
+
+The maximum number of ticks generated by the
+`~matplotlib.ticker.LogLocator` can now be controlled explicitly
+via setting the new 'numticks' kwarg to an integer.  By default
+the kwarg is None which internally sets it to the 'auto' string,
+triggering a new algorithm for adjusting the maximum according
+to the axis length relative to the ticklabel font size.
+
+`matplotlib.ticker.LogFormatter`: two new kwargs
+------------------------------------------------
+
+Previously, minor ticks on log-scaled axes were not labeled by
+default.  An algorithm has been added to the
+`~matplotlib.ticker.LogFormatter` to control the labeling of
+ticks between integer powers of the base.  The algorithm uses
+two parameters supplied in a kwarg tuple named 'minor_thresholds'.
+See the docstring for further explanation.
+
+To improve support for axes using `~matplotlib.ticker.SymmetricLogLocator`,
+a 'linthresh' kwarg was added.
+
+
+New defaults for 3D quiver function in mpl_toolkits.mplot3d.axes3d.py
+---------------------------------------------------------------------
+
+Matplotlib has both a 2D and a 3D ``quiver`` function. These changes
+affect only the 3D function and make the default behavior of the 3D
+function match the 2D version. There are two changes:
+
+1) The 3D quiver function previously normalized the arrows to be the
+   same length, which makes it unusable for situations where the
+   arrows should be different lengths and does not match the behavior
+   of the 2D function. This normalization behavior is now controlled
+   with the ``normalize`` keyword, which defaults to False.
+
+2) The ``pivot`` keyword now defaults to ``tail`` instead of
+   ``tip``. This was done in order to match the default behavior of
+   the 2D quiver function.
+
+To obtain the previous behavior with the 3D quiver function, one can
+call the function with ::
+
+   ax.quiver(x, y, z, u, v, w, normalize=True, pivot='tip')
+
+where "ax" is an ``Axes3d`` object created with something like ::
+
+   import mpl_toolkits.mplot3d.axes3d
+   ax = plt.sublot(111, projection='3d')
+
+
+Stale figure behavior
+---------------------
+
+Attempting to draw the figure will now mark it as not stale (independent if
+the draw succeeds).  This change is to prevent repeatedly trying to re-draw a
+figure which is raising an error on draw.  The previous behavior would only mark
+a figure as not stale after a full re-draw succeeded.
+
+
+The spectral colormap is now nipy_spectral
+------------------------------------------
+
+The colormaps formerly known as ``spectral`` and ``spectral_r`` have been
+replaced by ``nipy_spectral`` and ``nipy_spectral_r`` since Matplotlib
+1.3.0. Even though the colormap was deprecated in Matplotlib 1.3.0, it never
+raised a warning. As of Matplotlib 2.0.0, using the old names raises a
+deprecation warning. In the future, using the old names will raise an error.
+
+Default install no longer includes test images
+----------------------------------------------
+
+To reduce the size of wheels and source installs, the tests and
+baseline images are no longer included by default.
+
+To restore installing the tests and images, use a `setup.cfg` with ::
+
+   [packages]
+   tests = True
+   toolkits_tests = True
+
+in the source directory at build/install time.
+
+Changes in 1.5.3
+================
+
+``ax.plot(..., marker=None)`` gives default marker
+--------------------------------------------------
+
+Prior to 1.5.3 kwargs passed to `~matplotlib.Axes.plot` were handled
+in two parts -- default kwargs generated internal to
+`~matplotlib.Axes.plot` (such as the cycled styles) and user supplied
+kwargs.  The internally generated kwargs were passed to the
+`matplotlib.lines.Line2D.__init__` and the user kwargs were passed to
+``ln.set(**kwargs)`` to update the artist after it was created.  Now
+both sets of kwargs are merged and passed to
+`~matplotlib.lines.Line2D.__init__`.  This change was made to allow `None`
+to be passed in via the user kwargs to mean 'do the default thing'  as
+is the convention through out mpl rather than raising an exception.
+
+Unlike most `~matplotlib.lines.Line2D` setter methods
+`~matplotlib.lines.Line2D.set_marker` did accept `None` as a valid
+input which was mapped to 'no marker'.  Thus, by routing this
+``marker=None`` through ``__init__`` rather than ``set(...)`` the meaning
+of ``ax.plot(..., marker=None)`` changed from 'no markers' to 'default markers
+from rcparams'.
+
+This is change is only evident if ``mpl.rcParams['lines.marker']`` has a value
+other than ``'None'`` (which is string ``'None'`` which means 'no marker').
+
+
+Changes in 1.5.2
+================
+
+
+Default Behavior Changes
+------------------------
+
+Changed default ``autorange`` behavior in boxplots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prior to v1.5.2, the whiskers of boxplots would extend to the minimum
+and maximum values if the quartiles were all equal (i.e., Q1 = median
+= Q3). This behavior has been disabled by default to restore consistency
+with other plotting packages.
+
+To restore the old behavior, simply set ``autorange=True`` when
+calling ``plt.boxplot``.
+
+
+Changes in 1.5.0
+================
+
+Code Changes
+------------
+
+Reversed `matplotlib.cbook.ls_mapper`, added `ls_mapper_r`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Formerly, `matplotlib.cbook.ls_mapper` was a dictionary with
+the long-form line-style names (`"solid"`) as keys and the short
+forms (`"-"`) as values.  This long-to-short mapping is now done
+by `ls_mapper_r`, and the short-to-long mapping is done by the
+`ls_mapper`.
+
+Prevent moving artists between Axes, Property-ify Artist.axes, deprecate Artist.{get,set}_axes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This was done to prevent an Artist that is
+already associated with an Axes from being moved/added to a different Axes.
+This was never supported as it causes havoc with the transform stack.
+The apparent support for this (as it did not raise an exception) was
+the source of multiple bug reports and questions on SO.
+
+For almost all use-cases, the assignment of the axes to an artist should be
+taken care of by the axes as part of the ``Axes.add_*`` method, hence the
+deprecation of {get,set}_axes.
+
+Removing the ``set_axes`` method will also remove the 'axes' line from
+the ACCEPTS kwarg tables (assuming that the removal date gets here
+before that gets overhauled).
+
+Tightened input validation on 'pivot' kwarg to quiver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tightened validation so that only {'tip', 'tail', 'mid', and 'middle'}
+(but any capitalization) are valid values for the 'pivot' kwarg in
+the `Quiver.__init__` (and hence `Axes.quiver` and
+`plt.quiver` which both fully delegate to `Quiver`).  Previously any
+input matching 'mid.*' would be interpreted as 'middle', 'tip.*' as
+'tip' and any string not matching one of those patterns as 'tail'.
+
+The value of `Quiver.pivot` is normalized to be in the set {'tip',
+'tail', 'middle'} in `Quiver.__init__`.
+
+Reordered `Axes.get_children`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The artist order returned by `Axes.get_children` did not
+match the one used by `Axes.draw`.  They now use the same
+order, as `Axes.draw` now calls `Axes.get_children`.
+
+Changed behaviour of contour plots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default behaviour of :func:`~matplotlib.pyplot.contour` and
+:func:`~matplotlib.pyplot.contourf` when using a masked array is now determined
+by the new keyword argument `corner_mask`, or if this is not specified then
+the new rcParam `contour.corner_mask` instead.  The new default behaviour is
+equivalent to using `corner_mask=True`; the previous behaviour can be obtained
+using `corner_mask=False` or by changing the rcParam.  The example
+http://matplotlib.org/examples/pylab_examples/contour_corner_mask.html
+demonstrates the difference.  Use of the old contouring algorithm, which is
+obtained with `corner_mask='legacy'`, is now deprecated.
+
+Contour labels may now appear in different places than in earlier versions of
+Matplotlib.
+
+In addition, the keyword argument `nchunk` now applies to
+:func:`~matplotlib.pyplot.contour` as well as
+:func:`~matplotlib.pyplot.contourf`, and it subdivides the domain into
+subdomains of exactly `nchunk` by `nchunk` quads, whereas previously it was
+only roughly `nchunk` by `nchunk` quads.
+
+The C/C++ object that performs contour calculations used to be stored in the
+public attribute QuadContourSet.Cntr, but is now stored in a private attribute
+and should not be accessed by end users.
+
+Added set_params function to all Locator types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This was a bug fix targeted at making the api for Locators more consistent.
+
+In the old behavior, only locators of type MaxNLocator have set_params()
+defined, causing its use on any other Locator to raise an AttributeError *(
+aside: set_params(args) is a function that sets the parameters of a Locator
+instance to be as specified within args)*. The fix involves moving set_params()
+to the Locator class such that all subtypes will have this function defined.
+
+Since each of the Locator subtypes have their own modifiable parameters, a
+universal set_params() in Locator isn't ideal. Instead, a default no-operation
+function that raises a warning is implemented in Locator. Subtypes extending
+Locator will then override with their own implementations. Subtypes that do
+not have a need for set_params() will fall back onto their parent's
+implementation, which raises a warning as intended.
+
+In the new behavior, Locator instances will not raise an AttributeError
+when set_params() is called. For Locators that do not implement set_params(),
+the default implementation in Locator is used.
+
+Disallow ``None`` as x or y value in ax.plot
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Do not allow ``None`` as a valid input for the ``x`` or ``y`` args in
+`ax.plot`.  This may break some user code, but this was never officially
+supported (ex documented) and allowing ``None`` objects through can lead
+to confusing exceptions downstream.
+
+To create an empty line use ::
+
+  ln1, = ax.plot([], [], ...)
+  ln2, = ax.plot([], ...)
+
+In either case to update the data in the `Line2D` object you must update
+both the ``x`` and ``y`` data.
+
+
+Removed `args` and `kwargs` from `MicrosecondLocator.__call__`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The call signature of :meth:`~matplotlib.dates.MicrosecondLocator.__call__`
+has changed from `__call__(self, *args, **kwargs)` to `__call__(self)`.
+This is consistent with the superclass :class:`~matplotlib.ticker.Locator`
+and also all the other Locators derived from this superclass.
+
+
+No `ValueError` for the MicrosecondLocator and YearLocator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :class:`~matplotlib.dates.MicrosecondLocator` and
+:class:`~matplotlib.dates.YearLocator` objects when called will return
+an empty list if the axes have no data or the view has no interval.
+Previously, they raised a `ValueError`. This is consistent with all
+the Date Locators.
+
+'OffsetBox.DrawingArea' respects the 'clip' keyword argument
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The call signature was `OffsetBox.DrawingArea(..., clip=True)` but nothing
+was done with the `clip` argument. The object did not do any clipping
+regardless of that parameter. Now the object can and does clip the
+child `Artists` if they are set to be clipped.
+
+You can turn off the clipping on a per-child basis using
+`child.set_clip_on(False)`.
+
+Add salt to clipPath id
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Add salt to the hash used to determine the id of the ``clipPath``
+nodes.  This is to avoid conflicts when two svg documents with the same
+clip path are included in the same document (see
+https://github.com/ipython/ipython/issues/8133 and
+https://github.com/matplotlib/matplotlib/issues/4349 ), however this
+means that the svg output is no longer deterministic if the same
+figure is saved twice.  It is not expected that this will affect any
+users as the current ids are generated from an md5 hash of properties
+of the clip path and any user would have a very difficult time
+anticipating the value of the id.
+
+Changed snap threshold for circle markers to inf
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When drawing circle markers above some marker size (previously 6.0)
+the path used to generate the marker was snapped to pixel centers.  However,
+this ends up distorting the marker away from a circle.  By setting the
+snap threshold to inf snapping is never done on circles.
+
+This change broke several tests, but is an improvement.
+
+Preserve units with Text position
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Previously the 'get_position' method on Text would strip away unit information
+even though the units were still present.  There was no inherent need to do
+this, so it has been changed so that unit data (if present) will be preserved.
+Essentially a call to 'get_position' will return the exact value from a call to
+'set_position'.
+
+If you wish to get the old behaviour, then you can use the new method called
+'get_unitless_position'.
+
+New API for custom Axes view changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Interactive pan and zoom were previously implemented using a Cartesian-specific
+algorithm that was not necessarily applicable to custom Axes. Three new private
+methods, :meth:`~matplotlib.axes._base._AxesBase._get_view`,
+:meth:`~matplotlib.axes._base._AxesBase._set_view`, and
+:meth:`~matplotlib.axes._base._AxesBase._set_view_from_bbox`, allow for custom
+*Axes* classes to override the pan and zoom algorithms. Implementors of
+custom *Axes* who override these methods may provide suitable behaviour for
+both pan and zoom as well as the view navigation buttons on the interactive
+toolbars.
+
+MathTex visual changes
+----------------------
+
+The spacing commands in mathtext have been changed to more closely
+match vanilla TeX.
+
+
+Improved spacing in mathtext
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The extra space that appeared after subscripts and superscripts has
+been removed.
+
+No annotation coordinates wrap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In #2351 for 1.4.0 the behavior of ['axes points', 'axes pixel',
+'figure points', 'figure pixel'] as coordinates was change to
+no longer wrap for negative values.  In 1.4.3 this change was
+reverted for 'axes points' and 'axes pixel' and in addition caused
+'axes fraction' to wrap.  For 1.5 the behavior has been reverted to
+as it was in 1.4.0-1.4.2, no wrapping for any type of coordinate.
+
+Deprecation
+-----------
+
+Deprecated `GraphicsContextBase.set_graylevel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The `GraphicsContextBase.set_graylevel` function has been deprecated in 1.5 and
+will be removed in 1.6.  It has been unused.  The
+`GraphicsContextBase.set_foreground` could be used instead.
+
+deprecated idle_event
+~~~~~~~~~~~~~~~~~~~~~
+
+The `idle_event` was broken or missing in most backends and causes spurious
+warnings in some cases, and its use in creating animations is now obsolete due
+to the animations module. Therefore code involving it has been removed from all
+but the wx backend (where it partially works), and its use is deprecated.  The
+animations module may be used instead to create animations.
+
+`color_cycle` deprecated
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+In light of the new property cycling feature,
+the Axes method *set_color_cycle* is now deprecated.
+Calling this method will replace the current property cycle with
+one that cycles just the given colors.
+
+Similarly, the rc parameter *axes.color_cycle* is also deprecated in
+lieu of the new *axes.prop_cycle* parameter. Having both parameters in
+the same rc file is not recommended as the result cannot be
+predicted. For compatibility, setting *axes.color_cycle* will
+replace the cycler in *axes.prop_cycle* with a color cycle.
+Accessing *axes.color_cycle* will return just the color portion
+of the property cycle, if it exists.
+
+Timeline for removal has not been set.
+
+
+Bundled jquery
+--------------
+
+The version of jquery bundled with the webagg backend has been upgraded
+from 1.7.1 to 1.11.3.  If you are using the version of jquery bundled
+with webagg you will need to update your html files as such
+
+.. code-block:: diff
+
+   -    <script src="_static/jquery/js/jquery-1.7.1.min.js"></script>
+   +    <script src="_static/jquery/js/jquery-1.11.3.min.js"></script>
+
+
+Code Removed
+------------
+
+Removed `Image` from main namespace
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`Image` was imported from PIL/pillow to test if PIL is available, but
+there is no reason to keep `Image` in the namespace once the availability
+has been determined.
+
+Removed `lod` from Artist
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Removed the method *set_lod* and all references to
+the attribute *_lod* as the are not used anywhere else in the
+code base.  It appears to be a feature stub that was never built
+out.
+
+Removed threading related classes from cbook
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The classes ``Scheduler``, ``Timeout``, and ``Idle`` were in cbook, but
+are not used internally.  They appear to be a prototype for the idle event
+system which was not working and has recently been pulled out.
+
+Removed `Lena` images from sample_data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``lena.png`` and ``lena.jpg`` images have been removed from
+Matplotlib's sample_data directory. The images are also no longer
+available from `matplotlib.cbook.get_sample_data`. We suggest using
+`matplotlib.cbook.get_sample_data('grace_hopper.png')` or
+`matplotlib.cbook.get_sample_data('grace_hopper.jpg')` instead.
+
+
+Legend
+~~~~~~
+Removed handling of `loc` as a positional argument to `Legend`
+
+
+Legend handlers
+~~~~~~~~~~~~~~~
+Remove code to allow legend handlers to be callable.  They must now
+implement a method ``legend_artist``.
+
+
+Axis
+~~~~
+Removed method ``set_scale``.  This is now handled via a private method which
+should not be used directly by users.  It is called via ``Axes.set_{x,y}scale``
+which takes care of ensuring the related changes are also made to the Axes
+object.
+
+finance.py
+~~~~~~~~~~
+
+Removed functions with ambiguous argument order from finance.py
+
+
+Annotation
+~~~~~~~~~~
+
+Removed ``textcoords`` and ``xytext`` proprieties from Annotation objects.
+
+
+spinxext.ipython_*.py
+~~~~~~~~~~~~~~~~~~~~~
+
+Both ``ipython_console_highlighting`` and ``ipython_directive`` have been
+moved to `IPython`.
+
+Change your import from 'matplotlib.sphinxext.ipython_directive' to
+'IPython.sphinxext.ipython_directive' and from
+'matplotlib.sphinxext.ipython_directive' to
+'IPython.sphinxext.ipython_directive'
+
+
+LineCollection.color
+~~~~~~~~~~~~~~~~~~~~
+
+Deprecated in 2005, use ``set_color``
+
+
+remove ``'faceted'`` as a valid value for `shading` in ``tri.tripcolor``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use `edgecolor` instead.  Added validation on ``shading`` to
+only be valid values.
+
+
+Remove ``faceted`` kwarg from scatter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Remove support for the ``faceted`` kwarg.  This was deprecated in
+d48b34288e9651ff95c3b8a071ef5ac5cf50bae7 (2008-04-18!) and replaced by
+``edgecolor``.
+
+
+Remove ``set_colorbar`` method from ``ScalarMappable``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Remove ``set_colorbar`` method, use `colorbar` attribute directly.
+
+
+patheffects.svg
+~~~~~~~~~~~~~~~
+
+ - remove ``get_proxy_renderer`` method from ``AbstarctPathEffect`` class
+ - remove ``patch_alpha`` and ``offset_xy`` from ``SimplePatchShadow``
+
+
+Remove ``testing.image_util.py``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Contained only a no-longer used port of functionality from PIL
+
+
+Remove ``mlab.FIFOBuffer``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Not used internally and not part of core mission of mpl.
+
+
+Remove ``mlab.prepca``
+~~~~~~~~~~~~~~~~~~~~~~
+Deprecated in 2009.
+
+
+Remove ``NavigationToolbar2QTAgg``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Added no functionality over the base ``NavigationToolbar2Qt``
+
+
+mpl.py
+~~~~~~
+
+Remove the module `matplotlib.mpl`.  Deprecated in 1.3 by
+PR #1670 and commit 78ce67d161625833cacff23cfe5d74920248c5b2
+
 
 Changes in 1.4.x
 ================
@@ -71,7 +1574,7 @@ original location:
 
 * The Sphinx extensions `ipython_directive` and
   `ipython_console_highlighting` have been moved to the IPython
-  project itself.  While they remain in matplotlib for this release,
+  project itself.  While they remain in Matplotlib for this release,
   they have been deprecated.  Update your extensions in `conf.py` to
   point to `IPython.sphinxext.ipython_directive` instead of
   `matplotlib.sphinxext.ipython_directive`.
@@ -100,7 +1603,7 @@ original location:
 * The legend handler interface has changed from a callable, to any object
   which implements the ``legend_artists`` method (a deprecation phase will
   see this interface be maintained for v1.4). See
-  :ref:`plotting-guide-legend` for further details. Further legend changes
+  :doc:`/tutorials/intermediate/legend_guide` for further details. Further legend changes
   include:
 
    * :func:`matplotlib.axes.Axes._get_legend_handles` now returns a generator
@@ -206,7 +1709,7 @@ original location:
 
 * Clipping is now off by default on offset boxes.
 
-* matplotlib now uses a less-aggressive call to ``gc.collect(1)`` when
+* Matplotlib now uses a less-aggressive call to ``gc.collect(1)`` when
   closing figures to avoid major delays with large numbers of user objects
   in memory.
 
@@ -320,7 +1823,7 @@ Code deprecation
 * The `ScalarMappable` class' `set_colorbar` is now
   deprecated. Instead, the
   :attr:`matplotlib.cm.ScalarMappable.colorbar` attribute should be
-  used.  In previous matplotlib versions this attribute was an
+  used.  In previous Matplotlib versions this attribute was an
   undocumented tuple of ``(colorbar_instance, colorbar_axes)`` but is
   now just ``colorbar_instance``. To get the colorbar axes it is
   possible to just use the
@@ -427,7 +1930,7 @@ Configuration and rcParams
 * On Linux, the user-specific `matplotlibrc` configuration file is now
   located in `~/.config/matplotlib/matplotlibrc` to conform to the
   `XDG Base Directory Specification
-  <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
+  <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
 
 * The `font.*` rcParams now affect only text objects created after the
   rcParam has been set, and will not retroactively affect already
@@ -506,7 +2009,7 @@ Changes in 1.2.x
       ax = projection_class(self, rect, **kwargs)
 
   This change means that third party objects can expose themselves as
-  matplotlib axes by providing a ``_as_mpl_axes`` method. See
+  Matplotlib axes by providing a ``_as_mpl_axes`` method. See
   :ref:`adding-new-scales` for more detail.
 
 * A new keyword *extendfrac* in :meth:`~matplotlib.pyplot.colorbar` and
@@ -680,7 +2183,7 @@ Changes beyond 0.99.x
   date. If needed, install them independently.
 
 .. _configobj: http://www.voidspace.org.uk/python/configobj.html
-.. _`enthought.traits`: http://code.enthought.com/projects/traits
+.. _`enthought.traits`: http://code.enthought.com/pages/traits.html
 
 * The new rc parameter ``savefig.extension`` sets the filename extension
   that is used by :meth:`matplotlib.figure.Figure.savefig` if its *fname*
@@ -736,7 +2239,7 @@ Changes beyond 0.99.x
     as lines and/or markers.
 
 Changes in 0.99
-======================
+===============
 
 * pylab no longer provides a load and save function.  These are
   available in matplotlib.mlab, or you can use numpy.loadtxt and
@@ -761,7 +2264,7 @@ Changes in 0.99
 * Polar plots no longer accept a resolution kwarg.  Instead, each Path
   must specify its own number of interpolation steps.  This is
   unlikely to be a user-visible change -- if interpolation of data is
-  required, that should be done before passing it to matplotlib.
+  required, that should be done before passing it to Matplotlib.
 
 Changes for 0.98.x
 ==================
@@ -898,7 +2401,7 @@ Changes for 0.98.0
   color cycle: :func:`matplotlib.axes.set_default_color_cycle` and
   :meth:`matplotlib.axes.Axes.set_color_cycle`.
 
-* matplotlib now requires Python 2.4, so :mod:`matplotlib.cbook` will
+* Matplotlib now requires Python 2.4, so :mod:`matplotlib.cbook` will
   no longer provide :class:`set`, :func:`enumerate`, :func:`reversed`
   or :func:`izip` compatibility functions.
 
@@ -1054,7 +2557,7 @@ The :class:`Polar` class has moved to :mod:`matplotlib.projections.polar`.
    `Axes.toggle_log_lineary()` has been removed.
 
 :mod:`matplotlib.artist`
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 ============================================================ ============================================================
 Old method                                                   New method
@@ -1134,7 +2637,7 @@ Old method                                                   New method
 ============================================================ ============================================================
 
 :class:`~matplotlib.backend_bases.RendererBase`
-```````````````````````````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New methods:
 
@@ -1143,7 +2646,7 @@ New methods:
 
   * :meth:`draw_markers(self, gc, marker_path, marker_trans, path,
     trans, rgbFace)
-    <matplotlib.backend_bases.RendererBase.draw_markers`
+    <matplotlib.backend_bases.RendererBase.draw_markers>`
 
   * :meth:`draw_path_collection(self, master_transform, cliprect,
     clippath, clippath_trans, paths, all_transforms, offsets,
@@ -1305,7 +2808,7 @@ Changes for 0.90.1
     units.ConversionInterface.tickers renamed to
     units.ConversionInterface.axisinfo and it now returns a
     units.AxisInfo object rather than a tuple.  This will make it
-    easier to add axis info functionality (eg I added a default label
+    easier to add axis info functionality (e.g., I added a default label
     on this iteration) w/o having to change the tuple length and hence
     the API of the client code every time new functionality is added.
     Also, units.ConversionInterface.convert_to_value is now simply
@@ -1339,7 +2842,7 @@ Changes for 0.90.1
 
     Moved data files into lib/matplotlib so that setuptools' develop
     mode works. Re-organized the mpl-data layout so that this source
-    structure is maintained in the installation. (I.e. the 'fonts' and
+    structure is maintained in the installation. (i.e., the 'fonts' and
     'images' sub-directories are maintained in site-packages.).
     Suggest removing site-packages/matplotlib/mpl-data and
     ~/.matplotlib/ttffont.cache before installing
@@ -1790,7 +3293,7 @@ Changes for 0.71
    pylab still imports most of the symbols from Numerix, MLab, fft,
    etc, but is more cautious.  For names that clash with python names
    (min, max, sum), pylab keeps the builtins and provides the numeric
-   versions with an a* prefix, eg (amin, amax, asum)
+   versions with an a* prefix, e.g., (amin, amax, asum)
 
 Changes for 0.70
 ================
@@ -1810,7 +3313,7 @@ Changes for 0.65.1
   removed add_axes and add_subplot from backend_bases.  Use
   figure.add_axes and add_subplot instead.  The figure now manages the
   current axes with gca and sca for get and set current axes.  If you
-  have code you are porting which called, eg, figmanager.add_axes, you
+  have code you are porting which called, e.g., figmanager.add_axes, you
   can now simply do figmanager.canvas.figure.add_axes.
 
 Changes for 0.65
@@ -1937,7 +3440,7 @@ pcolor_classic and scatter_classic.
 
 The return value from pcolor is a PolyCollection.  Most of the
 propertes that are available on rectangles or other patches are also
-available on PolyCollections, eg you can say::
+available on PolyCollections, e.g., you can say::
 
   c = scatter(blah, blah)
   c.set_linewidth(1.0)
@@ -1955,7 +3458,7 @@ over the return value of scatter or pcolor to set properties for the
 entire list.
 
 If you want the different elements of a collection to vary on a
-property, eg to have different line widths, see matplotlib.collections
+property, e.g., to have different line widths, see matplotlib.collections
 for a discussion on how to set the properties as a sequence.
 
 For scatter, the size argument is now in points^2 (the area of the
@@ -2078,7 +3581,7 @@ Transformations
   implementations, matplotlib.transforms.SeparableTransformation and
   matplotlib.transforms.Affine.  The SeparableTransformation is
   constructed with the bounding box of the input (this determines the
-  rectangular coordinate system of the input, ie the x and y view
+  rectangular coordinate system of the input, i.e., the x and y view
   limits), the bounding box of the display, and possibly nonlinear
   transformations of x and y.  The 2 most frequently used
   transformations, data coordinates -> display and axes coordinates ->
@@ -2114,6 +3617,8 @@ Transformations
   See unit/transforms_unit.py for many examples using the new
   transformations.
 
+
+.. highlight:: none
 
 Changes for 0.50
 ================
@@ -2181,7 +3686,7 @@ Changes for 0.50
       canvas.show()
       vbox.pack_start(canvas)
 
-    If you use the NavigationToolbar, this in now intialized with a
+    If you use the NavigationToolbar, this in now initialized with a
     FigureCanvas, not a Figure.  The examples embedding_in_gtk.py,
     embedding_in_gtk2.py, and mpl_with_glade.py all reflect the new
     API so use these as a guide.
@@ -2215,7 +3720,7 @@ Changes for 0.42
     needed with double buffered drawing.  Ditto with state change.
     Text instances have a get_prop_tup method that returns a hashable
     tuple of text properties which you can use to see if text props
-    have changed, eg by caching a font or layout instance in a dict
+    have changed, e.g., by caching a font or layout instance in a dict
     with the prop tup as a key -- see RendererGTK.get_pango_layout in
     backend_gtk for an example.
 
@@ -2236,7 +3741,7 @@ Changes for 0.42
 
   * matplotlib.matlab._get_current_fig_manager renamed to
     matplotlib.matlab.get_current_fig_manager to allow user access to
-    the GUI window attribute, eg figManager.window for GTK and
+    the GUI window attribute, e.g., figManager.window for GTK and
     figManager.frame for wx
 
 Changes for 0.40
@@ -2264,7 +3769,7 @@ Changes for 0.40
   - Patches
      * Initialized with a transx, transy which are Transform instances
 
-  - FigureBase attributes dpi is a DPI intance rather than scalar and
+  - FigureBase attributes dpi is a DPI instance rather than scalar and
     new attribute bbox is a Bound2D in display coords, and I got rid
     of the left, width, height, etc... attributes.  These are now
     accessible as, for example, bbox.x.min is left, bbox.x.interval()

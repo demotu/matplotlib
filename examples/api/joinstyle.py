@@ -1,6 +1,9 @@
-#!/usr/bin/env python
 """
-Illustrate the three different join styles
+===========
+Join styles
+===========
+
+Illustrate the three different join styles.
 """
 
 import numpy as np
@@ -8,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_angle(ax, x, y, angle, style):
-    phi = angle/180*np.pi
+    phi = np.radians(angle)
     xx = [x + .5, x, x + .5*np.cos(phi)]
     yy = [y, y, y + .5*np.sin(phi)]
     ax.plot(xx, yy, lw=8, color='blue', solid_joinstyle=style)
@@ -28,3 +31,17 @@ for x, style in enumerate((('miter', 'round', 'bevel'))):
 ax.set_xlim(-.5, 2.75)
 ax.set_ylim(-.5, 5.5)
 plt.show()
+
+#############################################################################
+#
+# ------------
+#
+# References
+# """"""""""
+#
+# The use of the following functions, methods, classes and modules is shown
+# in this example:
+
+import matplotlib
+matplotlib.axes.Axes.plot
+matplotlib.pyplot.plot

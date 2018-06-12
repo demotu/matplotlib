@@ -1,14 +1,14 @@
 """
+===============
+SVG Filter Line
+===============
+
 Demonstrate SVG filtering effects which might be used with mpl.
 
-Note that the filtering effects are only effective if your svg rederer
+Note that the filtering effects are only effective if your svg renderer
 support it.
 """
 
-from __future__ import print_function
-import matplotlib
-
-matplotlib.use("Svg")
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
@@ -36,7 +36,7 @@ for l in [l1, l2]:
     shadow.set_color("0.2")
     # adjust zorder of the shadow lines so that it is drawn below the
     # original lines
-    shadow.set_zorder(l.get_zorder()-0.5)
+    shadow.set_zorder(l.get_zorder() - 0.5)
 
     # offset transform
     ot = mtransforms.offset_copy(l.get_transform(), fig1,
@@ -45,15 +45,15 @@ for l in [l1, l2]:
     shadow.set_transform(ot)
 
     # set the id for a later use
-    shadow.set_gid(l.get_label()+"_shadow")
+    shadow.set_gid(l.get_label() + "_shadow")
 
 
 ax.set_xlim(0., 1.)
 ax.set_ylim(0., 1.)
 
-# save the figure as a string in the svg format.
-from StringIO import StringIO
-f = StringIO()
+# save the figure as a bytes string in the svg format.
+from io import BytesIO
+f = BytesIO()
 plt.savefig(f, format="svg")
 
 
@@ -77,9 +77,9 @@ tree.insert(0, ET.XML(filter_def))
 
 for l in [l1, l2]:
     # pick up the svg element with given id
-    shadow = xmlid[l.get_label()+"_shadow"]
-    # apply shdow filter
-    shadow.set("filter",'url(#dropshadow)')
+    shadow = xmlid[l.get_label() + "_shadow"]
+    # apply shadow filter
+    shadow.set("filter", 'url(#dropshadow)')
 
 fn = "svg_filter_line.svg"
 print("Saving '%s'" % fn)

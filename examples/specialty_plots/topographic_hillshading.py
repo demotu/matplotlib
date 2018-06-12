@@ -1,4 +1,8 @@
 """
+=======================
+Topographic hillshading
+=======================
+
 Demonstrates the visual effect of varying blend mode and vertical exaggeration
 on "hillshaded" plots.
 
@@ -17,22 +21,24 @@ import matplotlib.pyplot as plt
 from matplotlib.cbook import get_sample_data
 from matplotlib.colors import LightSource
 
-dem = np.load(get_sample_data('jacksboro_fault_dem.npz'))
-z = dem['elevation']
 
-#-- Optional dx and dy for accurate vertical exaggeration --------------------
-# If you need topographically accurate vertical exaggeration, or you don't want
-# to guess at what *vert_exag* should be, you'll need to specify the cellsize
-# of the grid (i.e. the *dx* and *dy* parameters).  Otherwise, any *vert_exag*
-# value you specify will be realitive to the grid spacing of your input data
-# (in other words, *dx* and *dy* default to 1.0, and *vert_exag* is calculated
-# relative to those parameters).  Similarly, *dx* and *dy* are assumed to be in
-# the same units as your input z-values.  Therefore, we'll need to convert the
-# given dx and dy from decimal degrees to meters.
-dx, dy = dem['dx'], dem['dy']
-dy = 111200 * dy
-dx = 111200 * dx * np.cos(np.radians(dem['ymin']))
-#-----------------------------------------------------------------------------
+with np.load(get_sample_data('jacksboro_fault_dem.npz')) as dem:
+    z = dem['elevation']
+
+    #-- Optional dx and dy for accurate vertical exaggeration ----------------
+    # If you need topographically accurate vertical exaggeration, or you don't
+    # want to guess at what *vert_exag* should be, you'll need to specify the
+    # cellsize of the grid (i.e. the *dx* and *dy* parameters).  Otherwise, any
+    # *vert_exag* value you specify will be relative to the grid spacing of
+    # your input data (in other words, *dx* and *dy* default to 1.0, and
+    # *vert_exag* is calculated relative to those parameters).  Similarly, *dx*
+    # and *dy* are assumed to be in the same units as your input z-values.
+    # Therefore, we'll need to convert the given dx and dy from decimal degrees
+    # to meters.
+    dx, dy = dem['dx'], dem['dy']
+    dy = 111200 * dy
+    dx = 111200 * dx * np.cos(np.radians(dem['ymin']))
+    #-------------------------------------------------------------------------
 
 # Shade from the northwest, with the sun 45 degrees from horizontal
 ls = LightSource(azdeg=315, altdeg=45)
@@ -54,17 +60,17 @@ for col, ve in zip(axes.T, [0.1, 1, 10]):
 
 # Label rows and columns
 for ax, ve in zip(axes[0], [0.1, 1, 10]):
-    ax.set_title('{}'.format(ve), size=18)
-for ax, mode in zip(axes[:,0], ['Hillshade', 'hsv', 'overlay', 'soft']):
+    ax.set_title('{0}'.format(ve), size=18)
+for ax, mode in zip(axes[:, 0], ['Hillshade', 'hsv', 'overlay', 'soft']):
     ax.set_ylabel(mode, size=18)
 
 # Group labels...
-axes[0,1].annotate('Vertical Exaggeration', (0.5, 1), xytext=(0, 30),
-                   textcoords='offset points', xycoords='axes fraction',
-                   ha='center', va='bottom', size=20)
-axes[2,0].annotate('Blend Mode', (0, 0.5), xytext=(-30, 0),
-                   textcoords='offset points', xycoords='axes fraction',
-                   ha='right', va='center', size=20, rotation=90)
+axes[0, 1].annotate('Vertical Exaggeration', (0.5, 1), xytext=(0, 30),
+                    textcoords='offset points', xycoords='axes fraction',
+                    ha='center', va='bottom', size=20)
+axes[2, 0].annotate('Blend Mode', (0, 0.5), xytext=(-30, 0),
+                    textcoords='offset points', xycoords='axes fraction',
+                    ha='right', va='center', size=20, rotation=90)
 fig.subplots_adjust(bottom=0.05, right=0.95)
 
 plt.show()

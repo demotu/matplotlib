@@ -1,3 +1,5 @@
+.. Note: This file is auto-generated using generate_credits.py
+
 .. _credits:
 
 *******
@@ -5,215 +7,839 @@ Credits
 *******
 
 
-matplotlib was written by John Hunter and is now developed and
-maintained by a number of `active
-<http://www.ohloh.net/projects/matplotlib/contributors>`_ developers.
-The current co-lead developers of matplotlib are Michael Droettboom
-and Thomas A. Caswell.
+Matplotlib was written by John D. Hunter, with contributions from
+an ever-increasing number of users and developers.
+The current co-lead developers are Michael Droettboom
+and Thomas A. Caswell; they are assisted by many
+`active
+<https://www.openhub.net/p/matplotlib/contributors>`_ developers.
 
-Special thanks to those who have made valuable contributions (roughly
-in order of first contribution by date).  Any list like this is bound
-to be incomplete and can't capture the thousands and thousands of
-contributions over the years from these and others:
+The following is a list of contributors extracted from the
+git revision control history of the project:
 
-Jeremy O'Donoghue
-  wrote the wx backend
+4over7,
+Aaron Boushley,
+Aashil Patel,
+AbdealiJK,
+Acanthostega,
+Adam,
+Adam Ginsburg,
+Adam Heck,
+Adam Ortiz,
+Adam Williamson,
+Adrian Price-Whelan,
+Adrien Chardon,
+Adrien F. Vincent,
+Ahmet Bakan,
+Akshay Nair,
+Alan Bernstein,
+Alan Du,
+Alberto,
+Alejandro Dubrovsky,
+Aleksey Bilogur,
+Alex C. Szatmary,
+Alex Loew,
+Alex Rothberg,
+AlexCav,
+Alexander Buchkovsky,
+Alexander Harnisch,
+Alexander Taylor,
+Alexei Colin,
+Alexis Bienvenüe,
+Ali Mehdi,
+Ali Uneri,
+Alistair Muldal,
+Allan Haldane,
+Alvaro Sanchez,
+Amit Aronovitch,
+Amy,
+AmyTeegarden,
+AndersonDaniel,
+Andras Deak,
+Andrea Bedini,
+Andreas Hilboll,
+Andreas Mayer,
+Andreas Mueller,
+Andreas Wallner,
+Andrew Dawson,
+Andrew Merrill,
+Andrew Straw,
+Andy Mastbaum,
+Andy Zhu,
+Anthony Scopatz,
+Anton Akhmerov,
+Antony Lee,
+Arie,
+Ariel Hernán Curiale,
+Arnaud Gardelein,
+Arpad Horvath,
+Arthur Paulino,
+Arvind,
+Aseem Bansal,
+Atharva Khare,
+BHT,
+BTWS,
+Bastian Bechtold,
+Behram Mistree,
+Ben,
+Ben Cohen,
+Ben Gamari,
+Ben Keller,
+Ben Root,
+Benedikt Daurer,
+Benjamin Berg,
+Benjamin Congdon,
+Benjamin Reedlunn,
+Bernhard M. Wiedemann,
+Bianca Gibson,
+Binglin Chang,
+Björn Dahlgren,
+Blaise Thompson,
+Boaz Mohar,
+Bradley M. Froehle,
+Brandon Liu,
+Brendan Zhang,
+Brennan Magee,
+Brett Cannon,
+Brett Graham,
+Brian Mattern,
+Brian McLaughlin,
+Bruno Beltran,
+Bruno Zohreh,
+CJ Carey,
+Cameron Bates,
+Cameron Davidson-Pilon,
+Cameron Fackler,
+Carissa Brittain,
+Carl Michal,
+Carwyn Pelley,
+Casey Webster,
+Casper van der Wel,
+Charles Moad,
+Charles Ruan,
+Chen Karako,
+Chris Beaumont,
+Chris G,
+Chris Holdgraf,
+Christian Brueffer,
+Christian Stade-Schuldt,
+Christoph Dann,
+Christoph Deil,
+Christoph Gohlke,
+Christoph Hoffmann,
+Cimarron Mittelsteadt,
+Cody Scot,
+Colin,
+Conner R. Phillips,
+Corey Farwell,
+Craig Citro,
+Craig M,
+Craig Tenney,
+DaCoEx,
+Dakota Blair,
+Damian,
+Damon McDougall,
+Dan Hickstein,
+Dana,
+Daniel C. Marcu,
+Daniel Hyams,
+Daniel Laidig,
+Daniel O'Connor,
+Danny Hermes,
+Dara Adib,
+Darren Dale,
+DaveL17,
+David A,
+David Anderson,
+David Haberthür,
+David Huard,
+David Kaplan,
+David Kent,
+David Kua,
+David Stansby,
+David Trémouilles,
+Dean Malmgren,
+Derek Kim,
+Derek Tropf,
+Devashish Deshpande,
+Diego Mora Cespedes,
+Dietmar Schwertberger,
+Dietrich Brunn,
+Divyam Madaan,
+Dmitry Lupyan,
+Dmitry Shachnev,
+DonaldSeo,
+Dora Fraeman,
+DoriekeMG,
+Dorota Jarecka,
+Doug Blank,
+Drew J. Sonne,
+Duncan Macleod,
+Dylan Evans,
+E. G. Patrick Bos,
+Edin Salkovic,
+Egor Panfilov,
+Elena Glassman,
+Elias Pipping,
+Elijah Schutz,
+Elliott Sales de Andrade,
+Elvis Stansvik,
+Emil Mikulic,
+Emlyn Price,
+Eric Dill,
+Eric Firing,
+Eric Larson,
+Eric Ma,
+Eric O. LEBIGOT (EOL),
+Eric Wieser,
+Erik Bray,
+Erik M. Bray,
+Erin Pintozzi,
+Eugen Beck,
+Eugene Yurtsev,
+Evan Davey,
+Ezra Peisach,
+Fabian Kloosterman,
+Fabian-Robert Stöter,
+Fabien Maussion,
+Fabio Zanini,
+FedeMiorelli,
+Federico Ariza,
+Felipe,
+Felix,
+Felix Kohlgrüber,
+Felix Yan,
+Fernando Perez,
+Filip Dimitrovski,
+Filipe Fernandes,
+Florencia Noriega,
+Florian Le Bourdais,
+Florian Rhiem,
+Francesco Montesano,
+Francis Colas,
+Franco Vaccari,
+Francoise Provencher,
+Frank Yu,
+François Magimel,
+Gabe,
+Gabriel Munteanu,
+Gauravjeet,
+Gaute Hope,
+Gellule Xg,
+Geoffrey Spear,
+Geoffroy Billotey,
+Gerald Storer,
+Giovanni,
+Graham Poulter,
+Gregory Ashton,
+Gregory R. Lee,
+Grillard,
+Grégory Lielens,
+Guillaume Gay,
+Guillermo Breto,
+Gustavo Braganca,
+Gustavo Goretkin,
+HHest,
+Hajoon Choi,
+Hakan Kucukdereli,
+Hans Dembinski,
+Hans Meine,
+Hans Moritz Günther,
+Harshit Patni,
+Hassan Kibirige,
+Hastings Greer,
+Heath Henley,
+Heiko Oberdiek,
+Helder,
+Henning Pohl,
+Herbert Kruitbosch,
+Holger Peters,
+Hubert Holin,
+Ian Thomas,
+Ida Hjorth,
+Ignas Anikevicius (gns_ank),
+Ilia Kurenkov,
+Ilya Flyamer,
+ImSoErgodic,
+ImportanceOfBeingErnest,
+Ioannis Filippidis,
+Isa Hassen,
+Isaac Schwabacher,
+Isaac Slavitt,
+Ismo Toijala,
+J Alammar,
+J. Goutin,
+Jaap Versteegh,
+Jack Kelly,
+Jacob McDonald,
+Jae-Joon Lee,
+Jaime Fernandez,
+Jake Vanderplas,
+James A. Bednar,
+James Pallister,
+James R. Evans,
+JamesMakela,
+Jamie Nunez,
+Jan Schlüter,
+Jan Schulz,
+Jan-Philip Gehrcke,
+Jan-willem De Bleser,
+Jarrod Millman,
+Jascha Ulrich,
+Jason Grout,
+Jason King,
+Jason Liw Yan Chong,
+Jason Miller,
+Jason Neal,
+Jason Zheng,
+JayP16,
+Jeff Lutgen,
+Jeff Whitaker,
+Jeffrey Bingham,
+Jeffrey Hokanson @ Loki,
+JelsB,
+Jens Hedegaard Nielsen,
+Jeremy Fix,
+Jeremy O'Donoghue,
+Jeremy Thurgood,
+Jessica B. Hamrick,
+Jim Radford,
+Jochen Voss,
+Jody Klymak,
+Joe Kington,
+Joel B. Mohler,
+Johannes Wienke,
+John Hoffman,
+John Hunter,
+John Vandenberg,
+Johnny Gill,
+JojoBoulix,
+Jonathan Waltman,
+Jorrit Wronski,
+Josef Heinen,
+Joseph Albert,
+Joseph Fox-Rabinovitz,
+Joseph Jon Booker,
+Joseph Martinot-Lagarde,
+José Ricardo,
+Jouni K. Seppänen,
+Juan Nunez-Iglesias,
+Julia Sprenger,
+Julian Mehne,
+Julian Taylor,
+Julian V. Modesto,
+JulianCienfuegos,
+Julien Lhermitte,
+Julien Schueller,
+Julien Woillez,
+Julien-Charles Lévesque,
+Jun Tan,
+Justin Cai,
+Jörg Dietrich,
+Kacper Kowalik (Xarthisius),
+Kanchana Ranasinghe,
+Kanwar245,
+Katy Huff,
+Keerysanth Sribaskaran,
+Ken McIvor,
+Kenneth Ma,
+Kevin Chan,
+Kevin Davies,
+Kevin Ji,
+Kevin Keating,
+Kevin Rose,
+Kexuan Sun,
+Kieran Ramos,
+Kimmo Palin,
+Kjartan Myrdal,
+Kjell Le,
+Klara Gerlei,
+Konrad Förstner,
+Konstantin Tretyakov,
+Kristen M. Thyng,
+Kyle Bridgemohansingh,
+Kyler Brown,
+Lance Hepler,
+Laptop11_ASPP2016,
+Larry Bradley,
+Leeonadoh,
+Lennart Fricke,
+Leo Singer,
+Leon Yin,
+Levi Kilcher,
+Liam Brannigan,
+Lion Krischer,
+Lionel Miller,
+Lodato Luciano,
+Lori J,
+Loïc Estève,
+Loïc Séguin-C,
+Luca Verginer,
+Luis Pedro Coelho,
+Maarten Baert,
+Magnus Nord,
+Majid alDosari,
+Maksym P,
+Manuel GOACOLOU,
+Manuel Jung,
+Manuel Metz,
+Marc Abramowitz,
+Marcos Duarte,
+Marek Rudnicki,
+Marianne Corvellec,
+Marin Gilles,
+Markus Roth,
+Markus Rothe,
+Martin Dengler,
+Martin Fitzpatrick,
+Martin Spacek,
+Martin Teichmann,
+Martin Thoma,
+Martin Ueding,
+Massimo Santini,
+Masud Rahman,
+Mathieu Duponchelle,
+Matt Giuca,
+Matt Hancock,
+Matt Klein,
+Matt Li,
+Matt Newville,
+Matt Shen,
+Matt Terry,
+Matthew Bell,
+Matthew Brett,
+Matthew Emmett,
+Matthias Bussonnier,
+Matthias Lüthi,
+Matthieu Caneill,
+Matti Picus,
+Matěj Týč,
+Maximilian Albert,
+Maximilian Maahn,
+Maximilian Nöthe,
+Maximilian Trescher,
+Mellissa Cross,
+Mher Kazandjian,
+Michael,
+Michael Droettboom,
+Michael Sarahan,
+Michael Scott Cuthbert,
+Michael Seifert,
+Michael Welter,
+Michiel de Hoon,
+Michka Popoff,
+Mike Henninger,
+Mike Jarvis,
+Mike Kaufman,
+Mikhail Korobov,
+MinRK,
+Minty Zhang,
+MirandaXM,
+Miriam Sierig,
+Mitar,
+Molly Rossow,
+Moritz Boehle,
+Mudit Surana,
+Muhammad Mehdi,
+Naoya Kanai,
+Nathan Goldbaum,
+Nathan Musoke,
+Nathaniel M. Beaver,
+Neil,
+Neil Crighton,
+Nelle Varoquaux,
+Niall Robinson,
+Nic Eggert,
+Nicholas Devenish,
+Nick Garvey,
+Nick Papior,
+Nick Semenkovich,
+Nico Schlömer,
+Nicolas P. Rougier,
+Nicolas Pinto,
+Nicolas Tessore,
+Nik Quibin,
+Nikita Kniazev,
+Niklas Koep,
+Nikolay Vyahhi,
+Nils Werner,
+Ninad Bhat,
+Norbert Nemec,
+Norman Fomferra,
+OceanWolf,
+Oleg Selivanov,
+Olga Botvinnik,
+Oliver Willekens,
+Olivier,
+Orso Meneghini,
+Osarumwense,
+Pankaj Pandey,
+Parfenov Sergey,
+Pascal Bugnion,
+Pastafarianist,
+Patrick Chen,
+Patrick Marsh,
+Paul,
+Paul Barret,
+Paul Ganssle,
+Paul Hobson,
+Paul Ivanov,
+Paul Kirow,
+Paul Romano,
+Paul Seyfert,
+Pauli Virtanen,
+Pavol Juhas,
+Per Parker,
+Perry Greenfield,
+Pete Bachant,
+Pete Huang,
+Pete Peterson,
+Peter Iannucci,
+Peter Mortensen,
+Peter St. John,
+Peter Würtz,
+Petr Danecek,
+Phil Elson,
+Phil Ruffwind,
+Pierre Haessig,
+Pierre de Buyl,
+Pim Schellart,
+Piti Ongmongkolkul,
+Pranav Garg,
+Przemysław Dąbek,
+Puneeth Chaganti,
+Qingpeng "Q.P." Zhang,
+RAKOTOARISON Herilalaina,
+Ramiro Gómez,
+Randy Olson,
+Reinier Heeres,
+Remi Rampin,
+Richard Gowers,
+Richard Hattersley,
+Richard Trieu,
+Ricky,
+Rishikesh,
+Rob Harrigan,
+Robert Johansson,
+Robin Dunn,
+Robin Neatherway,
+Robin Wilson,
+Rohan Walker,
+Roland Wirth,
+Ronald Hartley-Davies,
+Roy Smith,
+Rui Lopes,
+Russell Owen,
+RutgerK,
+Ryan,
+Ryan Blomberg,
+Ryan D'Souza,
+Ryan Dale,
+Ryan May,
+Ryan Morshead,
+Ryan Nelson,
+RyanPan,
+Saket Choudhary,
+Salganos,
+Salil Vanvari,
+Salinder Sidhu,
+Sam Vaughan,
+Sameer D'Costa,
+Samson,
+Samuel St-Jean,
+Sander,
+Sandro Tosi,
+Scott Howard,
+Scott Lasley,
+Scott Lawrence,
+Scott Stevenson,
+Sean Farley,
+Sebastian Pinnau,
+Sebastian Raschka,
+Sebastián Vanrell,
+Seraphim Alvanides,
+Sergey B Kirpichev,
+Sergey Kholodilov,
+Sergey Koposov,
+Silviu Tantos,
+Simon Cross,
+Simon Gibbons,
+Skelpdar,
+Skipper Seabold,
+Slav Basharov,
+Sourav Singh,
+Spencer McIntyre,
+Stanley, Simon,
+Stefan Lehmann,
+Stefan Pfenninger,
+Stefan van der Walt,
+Stefano Rivera,
+Stephan Erb,
+Stephen Horst,
+Sterling Smith,
+Steve Chaplin,
+Steven Silvester,
+Steven Tilley,
+Stuart Mumford,
+TD22057,
+Tadeo Corradi,
+Taehoon Lee,
+Takafumi Arakaki,
+Takeshi Kanmae,
+Tamas Gal,
+Tanuj,
+Ted Petrou,
+Terrence J. Katzenbaer,
+Terrence Katzenbaer,
+The Gitter Badger,
+Thomas A Caswell,
+Thomas Hisch,
+Thomas Kluyver,
+Thomas Lake,
+Thomas Mansencal,
+Thomas Robitaille,
+Thomas Spura,
+Thomas VINCENT,
+Thorsten Liebig,
+Tian Xia,
+Till Stensitzki,
+Tim Hoffmann,
+Timo Vanwynsberghe,
+Tobias Froehlich,
+Tobias Hoppe,
+Tobias Megies,
+Todd Jennings,
+Todd Miller,
+Tom,
+Tom Augspurger,
+Tom Dupré la Tour,
+Tomas Kazmar,
+Tony S Yu,
+Tor Colvin,
+Travis Oliphant,
+Trevor Bekolay,
+Trish Gillett-Kawamoto,
+Truong Pham,
+Tuan Dung Tran,
+Ulrich Dobramysl,
+Umair Idris,
+V. R,
+Vadim Markovtsev,
+Valentin Haenel,
+Valentin Schmidt,
+Vedant Nanda,
+Vidur Satija,
+Viktor Kerkez,
+Vlad Seghete,
+Víctor Terrón,
+Víctor Zabalza,
+WANG Aiyong,
+Warren Weckesser,
+Wen Li,
+Wendell Smith,
+Werner F Bruhin,
+Wes Campaigne,
+Wieland Hoffmann,
+Will Silva,
+William Granados,
+William Mallard,
+William Manley,
+Wouter Overmeire,
+Xiaowen Tang,
+Xufeng Wang,
+Yann Tambouret,
+Yao-Yuan Mao,
+Yaron de Leeuw,
+Yu Feng,
+Yunfei Yang,
+Yuri D'Elia,
+Yuval Langer,
+ZWL,
+Zac Hatfield-Dodds,
+Zach Pincus,
+Zair Mubashar,
+Zbigniew Jędrzejewski-Szmek,
+ahed87,
+akrherz,
+alcinos,
+alex,
+alvarosg,
+aneda,
+anykraus,
+apodemus,
+arokem,
+as691454,
+aseagram,
+ash13,
+aszilagyi,
+bblay,
+bduick,
+bev-a-tron,
+blackw1ng,
+blah blah,
+buefox,
+burrbull,
+butterw,
+cammil,
+captainwhippet,
+cclauss,
+ch3rn0v,
+chadawagner,
+chebee7i,
+chelseatroy,
+cknd,
+cldssty,
+clintval,
+danielballan,
+davidovitch,
+daydreamt,
+deeenes,
+deepyaman,
+dlmccaffrey,
+domspad,
+donald,
+drevicko,
+e-q,
+elpres,
+endolith,
+et2010,
+fardal,
+ffteja,
+fgb,
+fibersnet,
+fredrik-1,
+frenchwr,
+fuzzythecat,
+fvgoto,
+gcallah,
+gitj,
+gluap,
+gnaggnoyil,
+goir,
+goldstarwebs,
+greg-roper,
+gregorybchris,
+hannah,
+helmiriawan,
+hugadams,
+ilivni,
+insertroar,
+itziakos,
+jacob-on-github,
+jbbrokaw,
+jbhopkins,
+jerrylui803,
+jhelie,
+jli,
+jonchar,
+juan.gonzalez,
+kcrisman,
+keithbriggs,
+kelsiegr,
+khyox,
+kikocorreoso,
+klaus,
+klonuo,
+kramer65,
+kshramt,
+lboogaard,
+legitz7,
+lichri12,
+limtaesu,
+lspvic,
+luz.paz,
+lzkelley,
+mamrehn,
+marky,
+masamson,
+mbyt,
+mcelrath,
+mcquin,
+mdipierro,
+mitch,
+mlub,
+mobando,
+muahah,
+myyc,
+navdeep rana,
+nbrunett,
+nemanja,
+neok-m4700,
+nepix32,
+nickystringer,
+nmartensen,
+nwin,
+ob,
+pdubcali,
+pkienzle,
+productivememberofsociety666,
+profholzer,
+pupssman,
+rahiel,
+rebot,
+rhoef,
+rsnape,
+ruin,
+rvhbooth,
+s0vereign,
+s9w,
+scls19fr,
+scott-vsi,
+sdementen,
+serv-inc,
+settheory,
+sfroid,
+shaunwbell,
+simonpf,
+sindunuragarp,
+sohero,
+spiessbuerger,
+stahlous,
+stone,
+stonebig,
+switham,
+syngron,
+thuvejan,
+tmdavison,
+tomoemon,
+tonyyli,
+torfbolt,
+u55,
+ugurthemaster,
+ultra-andy,
+vab9,
+vbr,
+vraelvrangr,
+watkinrt,
+xbtsw,
+xuanyuansen,
+zhangeugenia,
+zhoubecky,
+Élie Gouzien
 
-Andrew Straw
-  Provided much of the log scaling architecture, the fill command, PIL
-  support for imshow, and provided many examples.  He also wrote the
-  support for dropped axis spines and the `buildbot
-  <http://mpl-buildbot.code.astraw.com/>`_ unit testing infrastructure
-  which triggers the JPL/James Evans platform specific builds and
-  regression test image comparisons from svn matplotlib across
-  platforms on svn commits.
+Some earlier contributors not included above are (with apologies
+to any we have missed):
 
-Charles Twardy
-  provided the impetus code for the legend class and has made
-  countless bug reports and suggestions for improvement.
+Charles Twardy,
+Gary Ruben,
+John Gill,
+David Moore,
+Paul Barrett,
+Jared Wahlstrand,
+Jim Benson,
+Paul Mcguire,
+Andrew Dalke,
+Nadia Dencheva,
+Baptiste Carvello,
+Sigve Tjoraand,
+Ted Drain,
+James Amundson,
+Daishi Harada,
+Nicolas Young,
+Paul Kienzle,
+John Porter,
+and Jonathon Taylor.
 
-Gary Ruben
-  made many enhancements to errorbar to support x and y
-  errorbar plots, and added a number of new marker types to plot.
-
-John Gill
-  wrote the table class and examples, helped with support for
-  auto-legend placement, and added support for legending scatter
-  plots.
-
-David Moore
-  wrote the paint backend (no longer used)
-
-Todd Miller
-  supported by `STSCI <http://www.stsci.edu>`_ contributed the TkAgg
-  backend and the numerix module, which allows matplotlib to work with
-  either numeric or numarray.  He also ported image support to the
-  postscript backend, with much pain and suffering.
-
-Paul Barrett
-  supported by `STSCI <http://www.stsci.edu>`_ overhauled font
-  management to provide an improved, free-standing, platform
-  independent font manager with a WC3 compliant font finder and cache
-  mechanism and ported truetype and mathtext to PS.
-
-Perry Greenfield
-  supported by `STSCI <http://www.stsci.edu>`_ overhauled and
-  modernized the goals and priorities page, implemented an improved
-  colormap framework, and has provided many suggestions and a lot of
-  insight to the overall design and organization of matplotlib.
-
-Jared Wahlstrand
-  wrote the initial SVG backend.
-
-Steve Chaplin
-  served as the GTK maintainer and wrote the Cairo and
-  GTKCairo backends.
-
-Jim Benson
-  provided the patch to handle vertical mathttext.
-
-Gregory Lielens
-  provided the FltkAgg backend and several patches for the frontend,
-  including contributions to toolbar2, and support for log ticking
-  with alternate bases and major and minor log ticking.
-
-Darren Dale
-
-  did the work to do mathtext exponential labeling for log plots,
-  added improved support for scalar formatting, and did the lions
-  share of the `psfrag
-  <http://www.ctan.org/tex-archive/help/Catalogue/entries/psfrag.html?action=/tex-archive/macros/latex/contrib/supported/psfrag>`_
-  LaTeX support for postscript. He has made substantial contributions
-  to extending and maintaining the PS and Qt backends, and wrote the
-  site.cfg and matplotlib.conf build and runtime configuration
-  support.  He setup the infrastructure for the sphinx documentation
-  that powers the mpl docs.
-
-Paul Mcguire
-  provided the pyparsing module on which mathtext relies, and made a
-  number of optimizations to the matplotlib mathtext grammar.
-
-
-Fernando Perez
-  has provided numerous bug reports and patches for cleaning up
-  backend imports and expanding pylab functionality, and provided
-  matplotlib support in the pylab mode for `ipython
-  <http://ipython.org>`_.  He also provided the
-  :func:`~matplotlib.pyplot.matshow` command, and wrote TConfig, which
-  is the basis for the experimental traited mpl configuration.
-
-Andrew Dalke
-  of `Dalke Scientific Software <http://www.dalkescientific.com/>`_ contributed the
-  strftime formatting code to handle years earlier than 1900.
-
-Jochen Voss
-  served as PS backend maintainer and has contributed several
-  bugfixes.
-
-Nadia Dencheva
-
-  supported by `STSCI <http://www.stsci.edu>`_ provided the contouring and
-  contour labeling code.
-
-Baptiste Carvello
-  provided the key ideas in a patch for proper
-  shared axes support that underlies ganged plots and multiscale
-  plots.
-
-Jeffrey Whitaker
-  at `NOAA <http://www.boulder.noaa.gov>`_ wrote the
-  :ref:`toolkit_basemap` toolkit
-
-Sigve Tjoraand, Ted Drain, James Evans
-  and colleagues at the `JPL <http://www.jpl.nasa.gov>`_ collaborated
-  on the QtAgg backend and sponsored development of a number of
-  features including custom unit types, datetime support, scale free
-  ellipses, broken bar plots and more.  The JPL team wrote the unit
-  testing image comparison `infrastructure
-  <https://github.com/matplotlib/matplotlib/tree/master/test>`_
-  for regression test image comparisons.
-
-James Amundson
-  did the initial work porting the qt backend to qt4
-
-Eric Firing
-  has contributed significantly to contouring, masked
-  array, pcolor, image and quiver support, in addition to ongoing
-  support and enhancements in performance, design and code quality in
-  most aspects of matplotlib.
-
-Daishi Harada
-  added support for "Dashed Text".  See `dashpointlabel.py
-  <../examples/pylab_examples/dashpointlabel.html>`_ and
-  :class:`~matplotlib.text.TextWithDash`.
-
-Nicolas Young
-  added support for byte images to imshow, which are
-  more efficient in CPU and memory, and added support for irregularly
-  sampled images.
-
-The `brainvisa <http://brainvisa.info>`_ Orsay team and Fernando Perez
-  added Qt support to `ipython <http://ipython.org>`_ in pylab mode.
-
-
-Charlie Moad
-  contributed work to matplotlib's Cocoa support and has done a lot of work on the OSX and win32 binary releases.
-
-Jouni K. Seppänen
-  wrote the PDF backend and contributed numerous
-  fixes to the code, to tex support and to the get_sample_data handler
-
-Paul Kienzle
-  improved the picking infrastructure for interactive plots, and with
-  Alex Mont contributed fast rendering code for quadrilateral meshes.
-
-Michael Droettboom
-  supported by `STSCI <http://www.stsci.edu>`_ wrote the enhanced
-  mathtext support, implementing Knuth's box layout algorithms, saving
-  to file-like objects across backends, and is responsible for
-  numerous bug-fixes, much better font and unicode support, and
-  feature and performance enhancements across the matplotlib code
-  base. He also rewrote the transformation infrastructure to support
-  custom projections and scales.
-
-John Porter, Jonathon Taylor and Reinier Heeres
-  John Porter wrote the mplot3d module for basic 3D plotting in
-  matplotlib, and Jonathon Taylor and Reinier Heeres ported it to the
-  refactored transform trunk.
-
-Jae-Joon Lee
-  Implemented fancy arrows and boxes, rewrote the legend
-  support to handle multiple columns and fancy text boxes, wrote the
-  axes grid toolkit, and has made numerous contributions to the code
-  and documentation
-
-Paul Ivanov
-  Has worked on getting matplotlib integrated better with other tools,
-  such as Sage and IPython, and getting the test infrastructure
-  faster, lighter and meaner.  Listen to his podcast.
-
-Tony Yu
-  Has been involved in matplotlib since the early days, and recently
-  has contributed stream plotting among many other improvements.  He
-  is the author of mpltools.
-
-Michiel de Hoon
-  Wrote and maintains the macosx backend.
-
-Ian Thomas
-  Contributed, among other things, the triangulation (tricolor and
-  tripcontour) methods.
-
-Benjamin Root
-  Has significantly improved the capabilities of the 3D plotting.  He
-  has improved matplotlib's documentation and code quality throughout,
-  and does invaluable triaging of pull requests and bugs.
-
-Phil Elson
-  Fixed some deep-seated bugs in the transforms framework, and has
-  been laser-focused on improving polish throughout matplotlib,
-  tackling things that have been considered to large and daunting for
-  a long time.
-
-Damon McDougall
-  Added triangulated 3D surfaces and stack plots to matplotlib.
+We also thank all who have reported bugs, commented on
+proposed changes, or otherwise contributed to Matplotlib's
+development and usefulness.

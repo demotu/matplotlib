@@ -1,20 +1,17 @@
 """
 Tests specific to the collections module.
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+import io
 
-import six
-
-from nose.tools import assert_equal
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+import pytest
 
 import matplotlib.pyplot as plt
 import matplotlib.collections as mcollections
 import matplotlib.transforms as mtransforms
-from matplotlib.collections import EventCollection
-from matplotlib.testing.decorators import cleanup, image_comparison
+from matplotlib.collections import Collection, LineCollection, EventCollection
+from matplotlib.testing.decorators import image_comparison
 
 
 def generate_EventCollection_plot():
@@ -73,7 +70,6 @@ def test__EventCollection__get_segments():
                    props['orientation'])
 
 
-@cleanup
 def test__EventCollection__get_positions():
     '''
     check to make sure the default positions match the input positions
@@ -82,54 +78,48 @@ def test__EventCollection__get_positions():
     np.testing.assert_array_equal(props['positions'], coll.get_positions())
 
 
-@cleanup
 def test__EventCollection__get_orientation():
     '''
     check to make sure the default orientation matches the input
     orientation
     '''
     _, coll, props = generate_EventCollection_plot()
-    assert_equal(props['orientation'], coll.get_orientation())
+    assert props['orientation'] == coll.get_orientation()
 
 
-@cleanup
 def test__EventCollection__is_horizontal():
     '''
     check to make sure the default orientation matches the input
     orientation
     '''
     _, coll, _ = generate_EventCollection_plot()
-    assert_equal(True, coll.is_horizontal())
+    assert coll.is_horizontal()
 
 
-@cleanup
 def test__EventCollection__get_linelength():
     '''
     check to make sure the default linelength matches the input linelength
     '''
     _, coll, props = generate_EventCollection_plot()
-    assert_equal(props['linelength'], coll.get_linelength())
+    assert props['linelength'] == coll.get_linelength()
 
 
-@cleanup
 def test__EventCollection__get_lineoffset():
     '''
     check to make sure the default lineoffset matches the input lineoffset
     '''
     _, coll, props = generate_EventCollection_plot()
-    assert_equal(props['lineoffset'], coll.get_lineoffset())
+    assert props['lineoffset'] == coll.get_lineoffset()
 
 
-@cleanup
 def test__EventCollection__get_linestyle():
     '''
     check to make sure the default linestyle matches the input linestyle
     '''
     _, coll, _ = generate_EventCollection_plot()
-    assert_equal(coll.get_linestyle(), [(None, None)])
+    assert coll.get_linestyle() == [(None, None)]
 
 
-@cleanup
 def test__EventCollection__get_color():
     '''
     check to make sure the default color matches the input color
@@ -221,8 +211,8 @@ def test__EventCollection__switch_orientation():
     splt, coll, props = generate_EventCollection_plot()
     new_orientation = 'vertical'
     coll.switch_orientation()
-    assert_equal(new_orientation, coll.get_orientation())
-    assert_equal(False, coll.is_horizontal())
+    assert new_orientation == coll.get_orientation()
+    assert not coll.is_horizontal()
     new_positions = coll.get_positions()
     check_segments(coll,
                    new_positions,
@@ -244,8 +234,8 @@ def test__EventCollection__switch_orientation_2x():
     coll.switch_orientation()
     coll.switch_orientation()
     new_positions = coll.get_positions()
-    assert_equal(props['orientation'], coll.get_orientation())
-    assert_equal(True, coll.is_horizontal())
+    assert props['orientation'] == coll.get_orientation()
+    assert coll.is_horizontal()
     np.testing.assert_array_equal(props['positions'], new_positions)
     check_segments(coll,
                    new_positions,
@@ -263,8 +253,8 @@ def test__EventCollection__set_orientation():
     splt, coll, props = generate_EventCollection_plot()
     new_orientation = 'vertical'
     coll.set_orientation(new_orientation)
-    assert_equal(new_orientation, coll.get_orientation())
-    assert_equal(False, coll.is_horizontal())
+    assert new_orientation == coll.get_orientation()
+    assert not coll.is_horizontal()
     check_segments(coll,
                    props['positions'],
                    props['linelength'],
@@ -283,7 +273,7 @@ def test__EventCollection__set_linelength():
     splt, coll, props = generate_EventCollection_plot()
     new_linelength = 15
     coll.set_linelength(new_linelength)
-    assert_equal(new_linelength, coll.get_linelength())
+    assert new_linelength == coll.get_linelength()
     check_segments(coll,
                    props['positions'],
                    new_linelength,
@@ -301,7 +291,7 @@ def test__EventCollection__set_lineoffset():
     splt, coll, props = generate_EventCollection_plot()
     new_lineoffset = -5.
     coll.set_lineoffset(new_lineoffset)
-    assert_equal(new_lineoffset, coll.get_lineoffset())
+    assert new_lineoffset == coll.get_lineoffset()
     check_segments(coll,
                    props['positions'],
                    props['linelength'],
@@ -319,7 +309,20 @@ def test__EventCollection__set_linestyle():
     splt, coll, _ = generate_EventCollection_plot()
     new_linestyle = 'dashed'
     coll.set_linestyle(new_linestyle)
-    assert_equal(coll.get_linestyle(), [(0, (6.0, 6.0))])
+    assert coll.get_linestyle() == [(0, (6.0, 6.0))]
+    splt.set_title('EventCollection: set_linestyle')
+
+
+@image_comparison(baseline_images=['EventCollection_plot__set_ls_dash'],
+                  remove_text=True)
+def test__EventCollection__set_linestyle_single_dash():
+    '''
+    check to make sure set_linestyle accepts a single dash pattern
+    '''
+    splt, coll, _ = generate_EventCollection_plot()
+    new_linestyle = (0, (6., 6.))
+    coll.set_linestyle(new_linestyle)
+    assert coll.get_linestyle() == [(0, (6.0, 6.0))]
     splt.set_title('EventCollection: set_linestyle')
 
 
@@ -331,7 +334,7 @@ def test__EventCollection__set_linewidth():
     splt, coll, _ = generate_EventCollection_plot()
     new_linewidth = 5
     coll.set_linewidth(new_linewidth)
-    assert_equal(coll.get_linewidth(), new_linewidth)
+    assert coll.get_linewidth() == new_linewidth
     splt.set_title('EventCollection: set_linewidth')
 
 
@@ -370,20 +373,10 @@ def check_segments(coll, positions, linelength, lineoffset, orientation):
 
     # test to make sure each segment is correct
     for i, segment in enumerate(segments):
-        assert_equal(segment[0, pos1], lineoffset + linelength / 2.)
-        assert_equal(segment[1, pos1], lineoffset - linelength / 2.)
-        assert_equal(segment[0, pos2], positions[i])
-        assert_equal(segment[1, pos2], positions[i])
-
-
-def check_allprop(values, target):
-    '''
-    check to make sure all values match the given target
-
-    note: this is not a test, it is used by tests
-    '''
-    for value in values:
-        assert_equal(value, target)
+        assert segment[0, pos1] == lineoffset + linelength / 2
+        assert segment[1, pos1] == lineoffset - linelength / 2
+        assert segment[0, pos2] == positions[i]
+        assert segment[1, pos2] == positions[i]
 
 
 def check_allprop_array(values, target):
@@ -403,28 +396,24 @@ def test_null_collection_datalim():
                        mtransforms.Bbox.null().get_points())
 
 
-@cleanup
 def test_add_collection():
     # Test if data limits are unchanged by adding an empty collection.
     # Github issue #1490, pull #1497.
-    ax = plt.axes()
     plt.figure()
-    ax2 = plt.axes()
-    coll = ax2.scatter([0, 1], [0, 1])
+    ax = plt.axes()
+    coll = ax.scatter([0, 1], [0, 1])
     ax.add_collection(coll)
     bounds = ax.dataLim.bounds
-    coll = ax2.scatter([], [])
-    ax.add_collection(coll)
-    assert_equal(ax.dataLim.bounds, bounds)
+    coll = ax.scatter([], [])
+    assert ax.dataLim.bounds == bounds
 
 
-@cleanup
 def test_quiver_limits():
     ax = plt.axes()
     x, y = np.arange(8), np.arange(10)
-    data = u = v = np.linspace(0, 10, 80).reshape(10, 8)
+    u = v = np.linspace(0, 10, 80).reshape(10, 8)
     q = plt.quiver(x, y, u, v)
-    assert_equal(q.get_datalim(ax.transData).bounds, (0., 0., 7., 9.))
+    assert q.get_datalim(ax.transData).bounds == (0., 0., 7., 9.)
 
     plt.figure()
     ax = plt.axes()
@@ -433,10 +422,9 @@ def test_quiver_limits():
     y, x = np.meshgrid(y, x)
     trans = mtransforms.Affine2D().translate(25, 32) + ax.transData
     plt.quiver(x, y, np.sin(x), np.cos(y), transform=trans)
-    assert_equal(ax.dataLim.bounds, (20.0, 30.0, 15.0, 6.0))
+    assert ax.dataLim.bounds == (20.0, 30.0, 15.0, 6.0)
 
 
-@cleanup
 def test_barb_limits():
     ax = plt.axes()
     x = np.linspace(-5, 10, 20)
@@ -462,8 +450,8 @@ def test_EllipseCollection():
     X, Y = np.meshgrid(x, y)
     XY = np.vstack((X.ravel(), Y.ravel())).T
 
-    ww = X/float(x[-1])
-    hh = Y/float(y[-1])
+    ww = X / x[-1]
+    hh = Y / y[-1]
     aa = np.ones_like(ww) * 20  # first axis is 20 degrees CCW from x axis
 
     ec = mcollections.EllipseCollection(ww, hh, aa,
@@ -496,7 +484,7 @@ def test_polycollection_close():
         vertsQuad * len(zpos), linewidth=0.25)
     poly.set_alpha(0.7)
 
-    ## need to have a z-value for *each* polygon = element!
+    # need to have a z-value for *each* polygon = element!
     zs = []
     cs = []
     for z, c in zip(zpos, colors):
@@ -507,7 +495,7 @@ def test_polycollection_close():
 
     ax.add_collection3d(poly, zs=zs, zdir='y')
 
-    ## axis limit settings:
+    # axis limit settings:
     ax.set_xlim3d(0, 4)
     ax.set_zlim3d(0, 3)
     ax.set_ylim3d(0, 4)
@@ -524,11 +512,158 @@ def test_regularpolycollection_rotate():
     for xy, alpha in zip(xy_points, rotations):
         col = mcollections.RegularPolyCollection(
             4, sizes=(100,), rotation=alpha,
-            offsets=xy, transOffset=ax.transData)
+            offsets=[xy], transOffset=ax.transData)
         ax.add_collection(col, autolim=True)
     ax.autoscale_view()
 
 
-if __name__ == '__main__':
-    import nose
-    nose.runmodule(argv=['-s', '--with-doctest'], exit=False)
+@image_comparison(baseline_images=['regularpolycollection_scale'],
+                  extensions=['png'], remove_text=True)
+def test_regularpolycollection_scale():
+    # See issue #3860
+
+    class SquareCollection(mcollections.RegularPolyCollection):
+        def __init__(self, **kwargs):
+            super().__init__(4, rotation=np.pi/4., **kwargs)
+
+        def get_transform(self):
+            """Return transform scaling circle areas to data space."""
+            ax = self.axes
+
+            pts2pixels = 72.0 / ax.figure.dpi
+
+            scale_x = pts2pixels * ax.bbox.width / ax.viewLim.width
+            scale_y = pts2pixels * ax.bbox.height / ax.viewLim.height
+            return mtransforms.Affine2D().scale(scale_x, scale_y)
+
+    fig, ax = plt.subplots()
+
+    xy = [(0, 0)]
+    # Unit square has a half-diagonal of `1 / sqrt(2)`, so `pi * r**2`
+    # equals...
+    circle_areas = [np.pi / 2]
+    squares = SquareCollection(sizes=circle_areas, offsets=xy,
+                               transOffset=ax.transData)
+    ax.add_collection(squares, autolim=True)
+    ax.axis([-1, 1, -1, 1])
+
+
+def test_picking():
+    fig, ax = plt.subplots()
+    col = ax.scatter([0], [0], [1000], picker=True)
+    fig.savefig(io.BytesIO(), dpi=fig.dpi)
+
+    class MouseEvent(object):
+        pass
+    event = MouseEvent()
+    event.x = 325
+    event.y = 240
+
+    found, indices = col.contains(event)
+    assert found
+    assert_array_equal(indices['ind'], [0])
+
+
+def test_linestyle_single_dashes():
+    plt.scatter([0, 1, 2], [0, 1, 2], linestyle=(0., [2., 2.]))
+    plt.draw()
+
+
+@image_comparison(baseline_images=['size_in_xy'], remove_text=True,
+                  extensions=['png'])
+def test_size_in_xy():
+    fig, ax = plt.subplots()
+
+    widths, heights, angles = (10, 10), 10, 0
+    widths = 10, 10
+    coords = [(10, 10), (15, 15)]
+    e = mcollections.EllipseCollection(
+        widths, heights, angles,
+        units='xy',
+        offsets=coords,
+        transOffset=ax.transData)
+
+    ax.add_collection(e)
+
+    ax.set_xlim(0, 30)
+    ax.set_ylim(0, 30)
+
+
+def test_pandas_indexing(pd):
+
+    # Should not fail break when faced with a
+    # non-zero indexed series
+    index = [11, 12, 13]
+    ec = fc = pd.Series(['red', 'blue', 'green'], index=index)
+    lw = pd.Series([1, 2, 3], index=index)
+    ls = pd.Series(['solid', 'dashed', 'dashdot'], index=index)
+    aa = pd.Series([True, False, True], index=index)
+
+    Collection(edgecolors=ec)
+    Collection(facecolors=fc)
+    Collection(linewidths=lw)
+    Collection(linestyles=ls)
+    Collection(antialiaseds=aa)
+
+
+@pytest.mark.style('default')
+def test_lslw_bcast():
+    col = mcollections.PathCollection([])
+    col.set_linestyles(['-', '-'])
+    col.set_linewidths([1, 2, 3])
+
+    assert col.get_linestyles() == [(None, None)] * 6
+    assert col.get_linewidths() == [1, 2, 3] * 2
+
+    col.set_linestyles(['-', '-', '-'])
+    assert col.get_linestyles() == [(None, None)] * 3
+    assert (col.get_linewidths() == [1, 2, 3]).all()
+
+
+@pytest.mark.style('default')
+def test_capstyle():
+    col = mcollections.PathCollection([], capstyle='round')
+    assert col.get_capstyle() == 'round'
+    col.set_capstyle('butt')
+    assert col.get_capstyle() == 'butt'
+
+
+@pytest.mark.style('default')
+def test_joinstyle():
+    col = mcollections.PathCollection([], joinstyle='round')
+    assert col.get_joinstyle() == 'round'
+    col.set_joinstyle('miter')
+    assert col.get_joinstyle() == 'miter'
+
+
+@image_comparison(baseline_images=['cap_and_joinstyle'],
+                  extensions=['png'])
+def test_cap_and_joinstyle_image():
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlim([-0.5, 1.5])
+    ax.set_ylim([-0.5, 2.5])
+
+    x = np.array([0.0, 1.0, 0.5])
+    ys = np.array([[0.0], [0.5], [1.0]]) + np.array([[0.0, 0.0, 1.0]])
+
+    segs = np.zeros((3, 3, 2))
+    segs[:, :, 0] = x
+    segs[:, :, 1] = ys
+    line_segments = LineCollection(segs, linewidth=[10, 15, 20])
+    line_segments.set_capstyle("round")
+    line_segments.set_joinstyle("miter")
+
+    ax.add_collection(line_segments)
+    ax.set_title('Line collection with customized caps and joinstyle')
+
+
+@image_comparison(baseline_images=['scatter_post_alpha'],
+                  extensions=['png'], remove_text=True,
+                  style='default')
+def test_scatter_post_alpha():
+    fig, ax = plt.subplots()
+    sc = ax.scatter(range(5), range(5), c=range(5))
+    # this needs to be here to update internal state
+    fig.canvas.draw()
+    sc.set_alpha(.1)

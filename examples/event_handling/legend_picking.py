@@ -1,5 +1,9 @@
 """
-Enable picking on the legend to toggle the legended line on and off
+==============
+Legend Picking
+==============
+
+Enable picking on the legend to toggle the original line on and off
 """
 import numpy as np
 import matplotlib.pyplot as plt

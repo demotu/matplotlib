@@ -5,11 +5,11 @@
  *     undef_macros=['NDEBUG']
  * to the appropriate make_extension call in setupext.py, and then rebuilding.
  */
+#define NO_IMPORT_ARRAY
+
 #include "_tri.h"
-#include "src/mplutils.h"
 
 #include <algorithm>
-#include <iostream>
 #include <set>
 
 #define MOVETO 1
@@ -174,8 +174,7 @@ void BoundingBox::add(const XY& point)
 
 void BoundingBox::expand(const XY& delta)
 {
-    if (!empty)
-    {
+    if (!empty) {
         lower -= delta;
         upper += delta;
     }
@@ -218,48 +217,33 @@ void write_contour(const Contour& contour)
 
 
 
-
-Triangulation::Triangulation(PyArrayObject* x,
-                             PyArrayObject* y,
-                             PyArrayObject* triangles,
-                             PyArrayObject* mask,
-                             PyArrayObject* edges,
-                             PyArrayObject* neighbors)
-    : _npoints(PyArray_DIM(x,0)),
-      _ntri(PyArray_DIM(triangles,0)),
-      _x(x),
+Triangulation::Triangulation(const CoordinateArray& x,
+                             const CoordinateArray& y,
+                             const TriangleArray& triangles,
+                             const MaskArray& mask,
+                             const EdgeArray& edges,
+                             const NeighborArray& neighbors,
+                             int correct_triangle_orientations)
+    : _x(x),
       _y(y),
       _triangles(triangles),
       _mask(mask),
       _edges(edges),
       _neighbors(neighbors)
 {
-    _VERBOSE("Triangulation::Triangulation");
-    correct_triangles();
-}
-
-Triangulation::~Triangulation()
-{
-    _VERBOSE("Triangulation::~Triangulation");
-    Py_XDECREF(_x);
-    Py_XDECREF(_y);
-    Py_XDECREF(_triangles);
-    Py_XDECREF(_mask);
-    Py_XDECREF(_edges);
-    Py_XDECREF(_neighbors);
+    if (correct_triangle_orientations)
+        correct_triangles();
 }
 
 void Triangulation::calculate_boundaries()
 {
-    _VERBOSE("Triangulation::calculate_boundaries");
-
     get_neighbors();  // Ensure _neighbors has been created.
 
     // Create set of all boundary TriEdges, which are those which do not
     // have a neighbor triangle.
     typedef std::set<TriEdge> BoundaryEdges;
     BoundaryEdges boundary_edges;
-    for (int tri = 0; tri < _ntri; ++tri) {
+    for (int tri = 0; tri < get_ntri(); ++tri) {
         if (!is_masked(tri)) {
             for (int edge = 0; edge < 3; ++edge) {
                 if (get_neighbor(tri, edge) == -1) {
@@ -309,14 +293,13 @@ void Triangulation::calculate_boundaries()
 
 void Triangulation::calculate_edges()
 {
-    _VERBOSE("Triangulation::calculate_edges");
-    Py_XDECREF(_edges);
+    assert(_edges.empty() && "Expected empty edges array");
 
     // Create set of all edges, storing them with start point index less than
     // end point index.
     typedef std::set<Edge> EdgeSet;
     EdgeSet edge_set;
-    for (int tri = 0; tri < _ntri; ++tri) {
+    for (int tri = 0; tri < get_ntri(); ++tri) {
         if (!is_masked(tri)) {
             for (int edge = 0; edge < 3; edge++) {
                 int start = get_triangle_point(tri, edge);
@@ -328,24 +311,28 @@ void Triangulation::calculate_edges()
 
     // Convert to python _edges array.
     npy_intp dims[2] = {static_cast<npy_intp>(edge_set.size()), 2};
-    _edges = (PyArrayObject*)PyArray_SimpleNew(2, dims, PyArray_INT);
-    int* edges_ptr = (int*)PyArray_DATA(_edges);
+    _edges = EdgeArray(dims);
+
+    int i = 0;
     for (EdgeSet::const_iterator it = edge_set.begin(); it != edge_set.end(); ++it) {
-        *edges_ptr++ = it->start;
-        *edges_ptr++ = it->end;
+        _edges(i,   0) = it->start;
+        _edges(i++, 1) = it->end;
     }
 }
 
 void Triangulation::calculate_neighbors()
 {
-    _VERBOSE("Triangulation::calculate_neighbors");
-    Py_XDECREF(_neighbors);
+    assert(_neighbors.empty() && "Expected empty neighbors array");
 
     // Create _neighbors array with shape (ntri,3) and initialise all to -1.
-    npy_intp dims[2] = {_ntri,3};
-    _neighbors = (PyArrayObject*)PyArray_SimpleNew(2, dims, PyArray_INT);
-    int* neighbors_ptr = (int*)PyArray_DATA(_neighbors);
-    std::fill(neighbors_ptr, neighbors_ptr + 3*_ntri, -1);
+    npy_intp dims[2] = {get_ntri(), 3};
+    _neighbors = NeighborArray(dims);
+
+    int tri, edge;
+    for (tri = 0; tri < get_ntri(); ++tri) {
+        for (edge = 0; edge < 3; ++edge)
+            _neighbors(tri, edge) = -1;
+    }
 
     // For each triangle edge (start to end point), find corresponding neighbor
     // edge from end to start point.  Do this by traversing all edges and
@@ -354,9 +341,9 @@ void Triangulation::calculate_neighbors()
     // already found.
     typedef std::map<Edge, TriEdge> EdgeToTriEdgeMap;
     EdgeToTriEdgeMap edge_to_tri_edge_map;
-    for (int tri = 0; tri < _ntri; ++tri) {
+    for (tri = 0; tri < get_ntri(); ++tri) {
         if (!is_masked(tri)) {
-            for (int edge = 0; edge < 3; ++edge) {
+            for (edge = 0; edge < 3; ++edge) {
                 int start = get_triangle_point(tri, edge);
                 int end   = get_triangle_point(tri, (edge+1)%3);
                 EdgeToTriEdgeMap::iterator it =
@@ -368,8 +355,8 @@ void Triangulation::calculate_neighbors()
                 } else {
                     // Neighbor edge found, set the two elements of _neighbors
                     // and remove edge from edge_to_tri_edge_map.
-                    neighbors_ptr[3*tri + edge] = it->second.tri;
-                    neighbors_ptr[3*it->second.tri + it->second.edge] = tri;
+                    _neighbors(tri, edge)= it->second.tri;
+                    _neighbors(it->second.tri, it->second.edge) = tri;
                     edge_to_tri_edge_map.erase(it);
                 }
             }
@@ -380,112 +367,76 @@ void Triangulation::calculate_neighbors()
     // boundary edges, but the boundaries are calculated separately elsewhere.
 }
 
-Py::Object Triangulation::calculate_plane_coefficients(const Py::Tuple &args)
+Triangulation::TwoCoordinateArray Triangulation::calculate_plane_coefficients(
+    const CoordinateArray& z)
 {
-    _VERBOSE("Triangulation::calculate_plane_coefficients");
-    args.verify_length(1);
+    npy_intp dims[2] = {get_ntri(), 3};
+    Triangulation::TwoCoordinateArray planes(dims);
 
-    PyArrayObject* z = (PyArrayObject*)PyArray_ContiguousFromObject(
-                           args[0].ptr(), PyArray_DOUBLE, 1, 1);
-    if (z == 0 || PyArray_DIM(z,0) != PyArray_DIM(_x,0)) {
-        Py_XDECREF(z);
-        throw Py::ValueError(
-            "z array must have same length as triangulation x and y arrays");
-    }
+    int point;
+    for (int tri = 0; tri < get_ntri(); ++tri) {
+        if (is_masked(tri)) {
+            planes(tri, 0) = 0.0;
+            planes(tri, 1) = 0.0;
+            planes(tri, 2) = 0.0;
+        }
+        else {
+            // Equation of plane for all points r on plane is r.normal = p
+            // where normal is vector normal to the plane, and p is a
+            // constant.  Rewrite as
+            // r_x*normal_x + r_y*normal_y + r_z*normal_z = p
+            // and rearrange to give
+            // r_z = (-normal_x/normal_z)*r_x + (-normal_y/normal_z)*r_y +
+            //       p/normal_z
+            point = _triangles(tri, 0);
+            XYZ point0(_x(point), _y(point), z(point));
+            point = _triangles(tri, 1);
+            XYZ side01 = XYZ(_x(point), _y(point), z(point)) - point0;
+            point = _triangles(tri, 2);
+            XYZ side02 = XYZ(_x(point), _y(point), z(point)) - point0;
 
-    PyArrayObject* planes_array = 0;  // Array to return.
+            XYZ normal = side01.cross(side02);
 
-    try
-    {
-        const double* zs = (const double*)PyArray_DATA(z);
-
-        npy_intp dims[2] = {_ntri, 3};
-        planes_array = (PyArrayObject*)PyArray_SimpleNew(2, dims,
-                                                         PyArray_DOUBLE);
-        double* planes = (double*)PyArray_DATA(planes_array);
-        const int* tris = get_triangles_ptr();
-        const double* xs = (const double*)PyArray_DATA(_x);
-        const double* ys = (const double*)PyArray_DATA(_y);
-        for (int tri = 0; tri < _ntri; ++tri)
-        {
-            if (is_masked(tri))
-            {
-                *planes++ = 0.0;
-                *planes++ = 0.0;
-                *planes++ = 0.0;
-                tris += 3;
+            if (normal.z == 0.0) {
+                // Normal is in x-y plane which means triangle consists of
+                // colinear points. To avoid dividing by zero, we use the
+                // Moore-Penrose pseudo-inverse.
+                double sum2 = (side01.x*side01.x + side01.y*side01.y +
+                               side02.x*side02.x + side02.y*side02.y);
+                double a = (side01.x*side01.z + side02.x*side02.z) / sum2;
+                double b = (side01.y*side01.z + side02.y*side02.z) / sum2;
+                planes(tri, 0) = a;
+                planes(tri, 1) = b;
+                planes(tri, 2) = point0.z - a*point0.x - b*point0.y;
             }
-            else
-            {
-                // Equation of plane for all points r on plane is r.normal = p
-                // where normal is vector normal to the plane, and p is a
-                // constant.  Rewrite as
-                // r_x*normal_x + r_y*normal_y + r_z*normal_z = p
-                // and rearrange to give
-                // r_z = (-normal_x/normal_z)*r_x + (-normal_y/normal_z)*r_y +
-                //       p/normal_z
-                XYZ point0(xs[*tris], ys[*tris], zs[*tris]);
-                tris++;
-                XYZ side01 = XYZ(xs[*tris], ys[*tris], zs[*tris]) - point0;
-                tris++;
-                XYZ side02 = XYZ(xs[*tris], ys[*tris], zs[*tris]) - point0;
-                tris++;
-
-                XYZ normal = side01.cross(side02);
-
-                if (normal.z == 0.0)
-                {
-                    // Normal is in x-y plane which means triangle consists of
-                    // colinear points. To avoid dividing by zero, we use the
-                    // Moore-Penrose pseudo-inverse.
-                    double sum2 = (side01.x*side01.x + side01.y*side01.y +
-                                   side02.x*side02.x + side02.y*side02.y);
-                    double a = (side01.x*side01.z + side02.x*side02.z) / sum2;
-                    double b = (side01.y*side01.z + side02.y*side02.z) / sum2;
-                    *planes++ = a;
-                    *planes++ = b;
-                    *planes++ = point0.z - a*point0.x - b*point0.y;
-                }
-                else
-                {
-                    *planes++ = -normal.x / normal.z;           // x
-                    *planes++ = -normal.y / normal.z;           // y
-                    *planes++ = normal.dot(point0) / normal.z;  // constant
-                }
+            else {
+                planes(tri, 0) = -normal.x / normal.z;           // x
+                planes(tri, 1) = -normal.y / normal.z;           // y
+                planes(tri, 2) = normal.dot(point0) / normal.z;  // constant
             }
         }
     }
-    catch (...)
-    {
-        Py_DECREF(z);
-        Py_XDECREF(planes_array);
-        throw;
-    }
 
-    Py_DECREF(z);
-    return Py::asObject((PyObject*)planes_array);
+    return planes;
 }
 
 void Triangulation::correct_triangles()
 {
-    int* triangles_ptr = (int*)PyArray_DATA(_triangles);
-    int* neighbors_ptr = _neighbors != 0 ? (int*)PyArray_DATA(_neighbors) : 0;
-    for (int tri = 0; tri < _ntri; ++tri) {
-        XY point0 = get_point_coords(*triangles_ptr++);
-        XY point1 = get_point_coords(*triangles_ptr++);
-        XY point2 = get_point_coords(*triangles_ptr++);
+    for (int tri = 0; tri < get_ntri(); ++tri) {
+        XY point0 = get_point_coords(_triangles(tri, 0));
+        XY point1 = get_point_coords(_triangles(tri, 1));
+        XY point2 = get_point_coords(_triangles(tri, 2));
         if ( (point1 - point0).cross_z(point2 - point0) < 0.0) {
             // Triangle points are clockwise, so change them to anticlockwise.
-            std::swap(*(triangles_ptr-2), *(triangles_ptr-1));
-            if (neighbors_ptr)
-                std::swap(*(neighbors_ptr+3*tri+1), *(neighbors_ptr+3*tri+2));
+            std::swap(_triangles(tri, 1), _triangles(tri, 2));
+            if (!_neighbors.empty())
+                std::swap(_neighbors(tri, 1), _neighbors(tri, 2));
         }
     }
 }
 
 const Triangulation::Boundaries& Triangulation::get_boundaries() const
 {
-    _VERBOSE("Triangulation::get_boundaries");
     if (_boundaries.empty())
         const_cast<Triangulation*>(this)->calculate_boundaries();
     return _boundaries;
@@ -506,28 +457,29 @@ void Triangulation::get_boundary_edge(const TriEdge& triEdge,
 
 int Triangulation::get_edge_in_triangle(int tri, int point) const
 {
-    assert(tri >= 0 && tri < _ntri && "Triangle index out of bounds");
-    assert(point >= 0 && point < _npoints && "Point index out of bounds.");
-    const int* triangles_ptr = get_triangles_ptr() + 3*tri;
+    assert(tri >= 0 && tri < get_ntri() && "Triangle index out of bounds");
+    assert(point >= 0 && point < get_npoints() && "Point index out of bounds.");
     for (int edge = 0; edge < 3; ++edge) {
-        if (*triangles_ptr++ == point) return edge;
+        if (_triangles(tri, edge) == point)
+            return edge;
     }
     return -1;  // point is not in triangle.
 }
 
-Py::Object Triangulation::get_edges()
+Triangulation::EdgeArray& Triangulation::get_edges()
 {
-    _VERBOSE("Triangulation::get_edges");
-    if (_edges == 0)
+    if (_edges.empty())
         calculate_edges();
-    return Py::asObject(Py::new_reference_to((PyObject*)_edges));
+    return _edges;
 }
 
 int Triangulation::get_neighbor(int tri, int edge) const
 {
-    assert(tri >= 0 && tri < _ntri && "Triangle index out of bounds");
+    assert(tri >= 0 && tri < get_ntri() && "Triangle index out of bounds");
     assert(edge >= 0 && edge < 3 && "Edge index out of bounds");
-    return get_neighbors_ptr()[3*tri + edge];
+    if (_neighbors.empty())
+        const_cast<Triangulation&>(*this).calculate_neighbors();
+    return _neighbors(tri, edge);
 }
 
 TriEdge Triangulation::get_neighbor_edge(int tri, int edge) const
@@ -542,42 +494,34 @@ TriEdge Triangulation::get_neighbor_edge(int tri, int edge) const
                                                                (edge+1)%3)));
 }
 
-Py::Object Triangulation::get_neighbors()
+Triangulation::NeighborArray& Triangulation::get_neighbors()
 {
-    _VERBOSE("Triangulation::get_neighbors");
-    if (_neighbors == 0) calculate_neighbors();
-    return Py::asObject(Py::new_reference_to((PyObject*)_neighbors));
-}
-
-const int* Triangulation::get_neighbors_ptr() const
-{
-    if (_neighbors == 0)
-        const_cast<Triangulation*>(this)->calculate_neighbors();
-    return (const int*)PyArray_DATA(_neighbors);
+    if (_neighbors.empty())
+        calculate_neighbors();
+    return _neighbors;
 }
 
 int Triangulation::get_npoints() const
 {
-    return _npoints;
+    return _x.size();
 }
 
 int Triangulation::get_ntri() const
 {
-    return _ntri;
+    return _triangles.size();
 }
 
 XY Triangulation::get_point_coords(int point) const
 {
-    assert(point >= 0 && point < _npoints && "Point index out of bounds.");
-    return XY( ((const double*)PyArray_DATA(_x))[point],
-               ((const double*)PyArray_DATA(_y))[point] );
+    assert(point >= 0 && point < get_npoints() && "Point index out of bounds.");
+    return XY(_x(point), _y(point));
 }
 
 int Triangulation::get_triangle_point(int tri, int edge) const
 {
-    assert(tri >= 0 && tri < _ntri && "Triangle index out of bounds");
+    assert(tri >= 0 && tri < get_ntri() && "Triangle index out of bounds");
     assert(edge >= 0 && edge < 3 && "Edge index out of bounds");
-    return get_triangles_ptr()[3*tri + edge];
+    return _triangles(tri, edge);
 }
 
 int Triangulation::get_triangle_point(const TriEdge& tri_edge) const
@@ -585,61 +529,21 @@ int Triangulation::get_triangle_point(const TriEdge& tri_edge) const
     return get_triangle_point(tri_edge.tri, tri_edge.edge);
 }
 
-const int* Triangulation::get_triangles_ptr() const
-{
-    return (const int*)PyArray_DATA(_triangles);
-}
-
-void Triangulation::init_type()
-{
-    _VERBOSE("Triangulation::init_type");
-
-    behaviors().name("Triangulation");
-    behaviors().doc("Triangulation");
-
-    add_varargs_method("calculate_plane_coefficients",
-                       &Triangulation::calculate_plane_coefficients,
-                       "calculate_plane_coefficients(z)");
-    add_noargs_method("get_edges", &Triangulation::get_edges,
-                      "get_edges()");
-    add_noargs_method("get_neighbors", &Triangulation::get_neighbors,
-                      "get_neighbors()");
-    add_varargs_method("set_mask", &Triangulation::set_mask,
-                       "set_mask(mask)");
-}
-
 bool Triangulation::is_masked(int tri) const
 {
-    assert(tri >= 0 && tri < _ntri && "Triangle index out of bounds.");
-    return _mask && *((bool*)PyArray_DATA(_mask) + tri);
+    assert(tri >= 0 && tri < get_ntri() && "Triangle index out of bounds.");
+    const npy_bool* mask_ptr = reinterpret_cast<const npy_bool*>(_mask.data());
+    return !_mask.empty() && mask_ptr[tri];
 }
 
-Py::Object Triangulation::set_mask(const Py::Tuple &args)
+void Triangulation::set_mask(const MaskArray& mask)
 {
-    _VERBOSE("Triangulation::set_mask");
-    args.verify_length(1);
-
-    Py_XDECREF(_mask);
-    _mask = 0;
-    if (args[0] != Py::None())
-    {
-        _mask = (PyArrayObject*)PyArray_ContiguousFromObject(
-                    args[0].ptr(), PyArray_BOOL, 1, 1);
-        if (_mask == 0 || PyArray_DIM(_mask,0) != PyArray_DIM(_triangles,0)) {
-            Py_XDECREF(_mask);
-            throw Py::ValueError(
-                "mask must be a 1D array with the same length as the triangles array");
-        }
-    }
+    _mask = mask;
 
     // Clear derived fields so they are recalculated when needed.
-     Py_XDECREF(_edges);
-    _edges = 0;
-    Py_XDECREF(_neighbors);
-    _neighbors = 0;
+    _edges = EdgeArray();
+    _neighbors = NeighborArray();
     _boundaries.clear();
-
-    return Py::None();
 }
 
 void Triangulation::write_boundaries() const
@@ -658,23 +562,14 @@ void Triangulation::write_boundaries() const
 
 
 
-
-TriContourGenerator::TriContourGenerator(Py::Object triangulation,
-                                         PyArrayObject* z)
+TriContourGenerator::TriContourGenerator(Triangulation& triangulation,
+                                         const CoordinateArray& z)
     : _triangulation(triangulation),
       _z(z),
-      _interior_visited(2*get_triangulation().get_ntri()),
+      _interior_visited(2*_triangulation.get_ntri()),
       _boundaries_visited(0),
       _boundaries_used(0)
-{
-    _VERBOSE("TriContourGenerator::TriContourGenerator");
-}
-
-TriContourGenerator::~TriContourGenerator()
-{
-    _VERBOSE("TriContourGenerator::~TriContourGenerator");
-    Py_XDECREF(_z);
-}
+{}
 
 void TriContourGenerator::clear_visited_flags(bool include_boundaries)
 {
@@ -705,44 +600,49 @@ void TriContourGenerator::clear_visited_flags(bool include_boundaries)
     }
 }
 
-Py::Object TriContourGenerator::contour_to_segs(const Contour& contour)
+PyObject* TriContourGenerator::contour_to_segs(const Contour& contour)
 {
-    Py::List segs(contour.size());
+    PyObject* segs = PyList_New(contour.size());
     for (Contour::size_type i = 0; i < contour.size(); ++i) {
         const ContourLine& line = contour[i];
         npy_intp dims[2] = {static_cast<npy_intp>(line.size()),2};
         PyArrayObject* py_line = (PyArrayObject*)PyArray_SimpleNew(
-                                                     2, dims, PyArray_DOUBLE);
+                                                     2, dims, NPY_DOUBLE);
         double* p = (double*)PyArray_DATA(py_line);
         for (ContourLine::const_iterator it = line.begin(); it != line.end(); ++it) {
             *p++ = it->x;
             *p++ = it->y;
         }
-        segs[i] = Py::asObject((PyObject*)py_line);
+        if (PyList_SetItem(segs, i, (PyObject*)py_line)) {
+            Py_XDECREF(segs);
+            PyErr_SetString(PyExc_RuntimeError,
+                            "Unable to set contour segments");
+            return NULL;
+        }
     }
     return segs;
 }
 
-Py::Object TriContourGenerator::contour_to_segs_and_kinds(const Contour& contour)
+PyObject* TriContourGenerator::contour_to_segs_and_kinds(const Contour& contour)
 {
     Contour::const_iterator line;
     ContourLine::const_iterator point;
 
     // Find total number of points in all contour lines.
-    int n_points = 0;
+    npy_intp n_points = 0;
     for (line = contour.begin(); line != contour.end(); ++line)
-        n_points += line->size();
+        n_points += (npy_intp)line->size();
 
     // Create segs array for point coordinates.
     npy_intp segs_dims[2] = {n_points, 2};
     PyArrayObject* segs = (PyArrayObject*)PyArray_SimpleNew(
-                                                2, segs_dims, PyArray_DOUBLE);
+                                                2, segs_dims, NPY_DOUBLE);
     double* segs_ptr = (double*)PyArray_DATA(segs);
 
     // Create kinds array for code types.
     npy_intp kinds_dims[1] = {n_points};
     PyArrayObject* kinds = (PyArrayObject*)PyArray_SimpleNew(
-                                                1, kinds_dims, PyArray_UBYTE);
+                                                1, kinds_dims, NPY_UBYTE);
     unsigned char* kinds_ptr = (unsigned char*)PyArray_DATA(kinds);
 
     for (line = contour.begin(); line != contour.end(); ++line) {
@@ -753,19 +653,19 @@ Py::Object TriContourGenerator::contour_to_segs_and_kinds(const Contour& contour
         }
     }
 
-    Py::Tuple result(2);
-    result[0] = Py::asObject((PyObject*)segs);
-    result[1] = Py::asObject((PyObject*)kinds);
+    PyObject* result = PyTuple_New(2);
+    if (PyTuple_SetItem(result, 0, (PyObject*)segs) ||
+        PyTuple_SetItem(result, 1, (PyObject*)kinds)) {
+        Py_XDECREF(result);
+        PyErr_SetString(PyExc_RuntimeError,
+                        "Unable to set contour segments and kinds");
+        return NULL;
+    }
     return result;
 }
 
-Py::Object TriContourGenerator::create_contour(const Py::Tuple &args)
+PyObject* TriContourGenerator::create_contour(const double& level)
 {
-    _VERBOSE("TriContourGenerator::create_contour");
-    args.verify_length(1);
-
-    double level = (Py::Float)args[0];
-
     clear_visited_flags(false);
     Contour contour;
 
@@ -775,14 +675,9 @@ Py::Object TriContourGenerator::create_contour(const Py::Tuple &args)
     return contour_to_segs(contour);
 }
 
-Py::Object TriContourGenerator::create_filled_contour(const Py::Tuple &args)
+PyObject* TriContourGenerator::create_filled_contour(const double& lower_level,
+                                                     const double& upper_level)
 {
-    _VERBOSE("TriContourGenerator::create_filled_contour");
-    args.verify_length(2);
-
-    double lower_level = (Py::Float)args[0];
-    double upper_level = (Py::Float)args[1];
-
     clear_visited_flags(true);
     Contour contour;
 
@@ -795,8 +690,8 @@ Py::Object TriContourGenerator::create_filled_contour(const Py::Tuple &args)
 
 XY TriContourGenerator::edge_interp(int tri, int edge, const double& level)
 {
-    return interp(get_triangulation().get_triangle_point(tri, edge),
-                  get_triangulation().get_triangle_point(tri, (edge+1)%3),
+    return interp(_triangulation.get_triangle_point(tri, edge),
+                  _triangulation.get_triangle_point(tri, (edge+1)%3),
                   level);
 }
 
@@ -806,7 +701,7 @@ void TriContourGenerator::find_boundary_lines(Contour& contour,
     // Traverse boundaries to find starting points for all contour lines that
     // intersect the boundaries.  For each starting point found, follow the
     // line to its end before continuing.
-    const Triangulation& triang = get_triangulation();
+    const Triangulation& triang = _triangulation;
     const Boundaries& boundaries = get_boundaries();
     for (Boundaries::const_iterator it = boundaries.begin();
             it != boundaries.end(); ++it) {
@@ -839,7 +734,7 @@ void TriContourGenerator::find_boundary_lines_filled(Contour& contour,
     // Traverse boundaries to find starting points for all contour lines that
     // intersect the boundaries.  For each starting point found, follow the
     // line to its end before continuing.
-    const Triangulation& triang = get_triangulation();
+    const Triangulation& triang = _triangulation;
     const Boundaries& boundaries = get_boundaries();
     for (Boundaries::size_type i = 0; i < boundaries.size(); ++i) {
         const Boundary& boundary = boundaries[i];
@@ -904,7 +799,7 @@ void TriContourGenerator::find_interior_lines(Contour& contour,
                                               bool on_upper,
                                               bool filled)
 {
-    const Triangulation& triang = get_triangulation();
+    const Triangulation& triang = _triangulation;
     int ntri = triang.get_ntri();
     for (int tri = 0; tri < ntri; ++tri) {
         int visited_index = (on_upper ? tri+ntri : tri);
@@ -942,7 +837,7 @@ bool TriContourGenerator::follow_boundary(ContourLine& contour_line,
                                           const double& upper_level,
                                           bool on_upper)
 {
-    const Triangulation& triang = get_triangulation();
+    const Triangulation& triang = _triangulation;
     const Boundaries& boundaries = get_boundaries();
 
     // Have TriEdge to start at, need equivalent boundary edge.
@@ -1015,7 +910,7 @@ void TriContourGenerator::follow_interior(ContourLine& contour_line,
     while (true) {
         int visited_index = tri;
         if (on_upper)
-            visited_index += get_triangulation().get_ntri();
+            visited_index += _triangulation.get_ntri();
 
         // Check for end not on boundary.
         if (!end_on_boundary && _interior_visited[visited_index])
@@ -1032,7 +927,7 @@ void TriContourGenerator::follow_interior(ContourLine& contour_line,
         contour_line.push_back(edge_interp(tri, edge, level));
 
         // Move to next triangle.
-        TriEdge next_tri_edge = get_triangulation().get_neighbor_edge(tri,edge);
+        TriEdge next_tri_edge = _triangulation.get_neighbor_edge(tri,edge);
 
         // Check if ending on a boundary.
         if (end_on_boundary && next_tri_edge.tri == -1)
@@ -1045,20 +940,20 @@ void TriContourGenerator::follow_interior(ContourLine& contour_line,
 
 const TriContourGenerator::Boundaries& TriContourGenerator::get_boundaries() const
 {
-    return get_triangulation().get_boundaries();
+    return _triangulation.get_boundaries();
 }
 
 int TriContourGenerator::get_exit_edge(int tri,
                                        const double& level,
                                        bool on_upper) const
 {
-    assert(tri >= 0 && tri < get_triangulation().get_ntri() &&
+    assert(tri >= 0 && tri < _triangulation.get_ntri() &&
            "Triangle index out of bounds.");
 
     unsigned int config =
-        (get_z(get_triangulation().get_triangle_point(tri, 0)) >= level) |
-        (get_z(get_triangulation().get_triangle_point(tri, 1)) >= level) << 1 |
-        (get_z(get_triangulation().get_triangle_point(tri, 2)) >= level) << 2;
+        (get_z(_triangulation.get_triangle_point(tri, 0)) >= level) |
+        (get_z(_triangulation.get_triangle_point(tri, 1)) >= level) << 1 |
+        (get_z(_triangulation.get_triangle_point(tri, 2)) >= level) << 2;
 
     if (on_upper) config = 7-config;
 
@@ -1075,61 +970,37 @@ int TriContourGenerator::get_exit_edge(int tri,
     }
 }
 
-const Triangulation& TriContourGenerator::get_triangulation() const
-{
-    return *(Triangulation*)_triangulation.ptr();
-}
-
 const double& TriContourGenerator::get_z(int point) const
 {
-    assert(point >= 0 && point < get_triangulation().get_npoints() &&
+    assert(point >= 0 && point < _triangulation.get_npoints() &&
            "Point index out of bounds.");
-    return ((const double*)PyArray_DATA(_z))[point];
-}
-
-void TriContourGenerator::init_type()
-{
-    _VERBOSE("TriContourGenerator::init_type");
-
-    behaviors().name("TriContourGenerator");
-    behaviors().doc("TriContourGenerator");
-
-    add_varargs_method("create_contour",
-                       &TriContourGenerator::create_contour,
-                       "create_contour(level)");
-    add_varargs_method("create_filled_contour",
-                       &TriContourGenerator::create_filled_contour,
-                       "create_filled_contour(lower_level, upper_level)");
+    return _z(point);
 }
 
 XY TriContourGenerator::interp(int point1,
                                int point2,
                                const double& level) const
 {
-    assert(point1 >= 0 && point1 < get_triangulation().get_npoints() &&
+    assert(point1 >= 0 && point1 < _triangulation.get_npoints() &&
            "Point index 1 out of bounds.");
-    assert(point2 >= 0 && point2 < get_triangulation().get_npoints() &&
+    assert(point2 >= 0 && point2 < _triangulation.get_npoints() &&
            "Point index 2 out of bounds.");
     assert(point1 != point2 && "Identical points");
     double fraction = (get_z(point2) - level) / (get_z(point2) - get_z(point1));
-    return get_triangulation().get_point_coords(point1)*fraction +
-           get_triangulation().get_point_coords(point2)*(1.0 - fraction);
+    return _triangulation.get_point_coords(point1)*fraction +
+           _triangulation.get_point_coords(point2)*(1.0 - fraction);
 }
 
 
 
-
-TrapezoidMapTriFinder::TrapezoidMapTriFinder(Py::Object triangulation)
+TrapezoidMapTriFinder::TrapezoidMapTriFinder(Triangulation& triangulation)
     : _triangulation(triangulation),
       _points(0),
       _tree(0)
-{
-    _VERBOSE("TrapezoidMapTriFinder::TrapezoidMapTriFinder");
-}
+{}
 
 TrapezoidMapTriFinder::~TrapezoidMapTriFinder()
 {
-    _VERBOSE("TrapezoidMapTriFinder::~TrapezoidMapTriFinder");
     clear();
 }
 
@@ -1150,8 +1021,8 @@ TrapezoidMapTriFinder::add_edge_to_tree(const Edge& edge)
     // Iterate through trapezoids intersecting edge from left to right.
     // Replace each old trapezoid with 2+ new trapezoids, and replace its
     // corresponding nodes in the search tree with new nodes.
-    unsigned int ntraps = trapezoids.size();
-    for (unsigned int i = 0; i < ntraps; ++i) {
+    size_t ntraps = trapezoids.size();
+    for (size_t i = 0; i < ntraps; ++i) {
         Trapezoid* old = trapezoids[i];  // old trapezoid to replace.
         bool start_trap = (i == 0);
         bool end_trap = (i == ntraps-1);
@@ -1360,42 +1231,20 @@ TrapezoidMapTriFinder::clear()
     _tree = 0;
 }
 
-Py::Object
-TrapezoidMapTriFinder::find_many(const Py::Tuple& args)
+TrapezoidMapTriFinder::TriIndexArray
+TrapezoidMapTriFinder::find_many(const CoordinateArray& x,
+                                 const CoordinateArray& y)
 {
-    args.verify_length(2);
-
-    // Check input arguments.
-    PyArrayObject* x = (PyArrayObject*)PyArray_ContiguousFromObject(
-                           args[0].ptr(), PyArray_DOUBLE, 0, 0);
-    PyArrayObject* y = (PyArrayObject*)PyArray_ContiguousFromObject(
-                           args[1].ptr(), PyArray_DOUBLE, 0, 0);
-    bool ok = (x != 0 && y != 0 && PyArray_NDIM(x) == PyArray_NDIM(y));
-    int ndim = x == 0 ? 0 : PyArray_NDIM(x);
-    for (int i = 0; ok && i < ndim; ++i)
-        ok = (PyArray_DIM(x,i) == PyArray_DIM(y,i));
-
-    if (!ok) {
-        Py_XDECREF(x);
-        Py_XDECREF(y);
-        throw Py::ValueError("x and y must be array_like with same shape");
-    }
-
     // Create integer array to return.
-    PyArrayObject* tri = (PyArrayObject*)PyArray_SimpleNew(
-                             ndim, PyArray_DIMS(x), PyArray_INT);
+    npy_intp n = x.dim(0);
+    npy_intp dims[1] = {n};
+    TriIndexArray tri_indices(dims);
 
     // Fill returned array.
-    double* x_ptr = (double*)PyArray_DATA(x);
-    double* y_ptr = (double*)PyArray_DATA(y);
-    int* tri_ptr = (int*)PyArray_DATA(tri);
-    int* tri_end = tri_ptr + PyArray_SIZE(tri);
-    while (tri_ptr < tri_end)
-        *tri_ptr++ = find_one(XY(*x_ptr++, *y_ptr++));
+    for (npy_intp i = 0; i < n; ++i)
+        tri_indices(i) = find_one(XY(x(i), y(i)));
 
-    Py_XDECREF(x);
-    Py_XDECREF(y);
-    return Py::asObject((PyObject*)tri);
+    return tri_indices;
 }
 
 int
@@ -1449,60 +1298,27 @@ TrapezoidMapTriFinder::find_trapezoids_intersecting_edge(
     return true;
 }
 
-Py::Object
+PyObject*
 TrapezoidMapTriFinder::get_tree_stats()
 {
-    _VERBOSE("TrapezoidMapTriFinder::get_tree_stats");
-
     NodeStats stats;
     _tree->get_stats(0, stats);
 
-    Py::List list(7);
-    list[0] = Py::Int(stats.node_count);
-    list[1] = Py::Int(static_cast<long>(stats.unique_nodes.size()));
-    list[2] = Py::Int(stats.trapezoid_count);
-    list[3] = Py::Int(static_cast<long>(stats.unique_trapezoid_nodes.size()));
-    list[4] = Py::Int(stats.max_parent_count);
-    list[5] = Py::Int(stats.max_depth);
-    list[6] = Py::Float(stats.sum_trapezoid_depth / stats.trapezoid_count);
-    return list;
-}
-
-const Triangulation&
-TrapezoidMapTriFinder::get_triangulation() const
-{
-    return *(Triangulation*)_triangulation.ptr();
+    return Py_BuildValue("[l,l,l,l,l,l,d]",
+                         stats.node_count,
+                         stats.unique_nodes.size(),
+                         stats.trapezoid_count,
+                         stats.unique_trapezoid_nodes.size(),
+                         stats.max_parent_count,
+                         stats.max_depth,
+                         stats.sum_trapezoid_depth / stats.trapezoid_count);
 }
 
 void
-TrapezoidMapTriFinder::init_type()
-{
-    _VERBOSE("TrapezoidMapTriFinder::init_type");
-
-    behaviors().name("TrapezoidMapTriFinder");
-    behaviors().doc("TrapezoidMapTriFinder");
-
-    add_varargs_method("find_many",
-                       &TrapezoidMapTriFinder::find_many,
-                       "find_many(x,y)");
-    add_noargs_method("get_tree_stats",
-                      &TrapezoidMapTriFinder::get_tree_stats,
-                      "get_tree_stats()");
-    add_noargs_method("initialize",
-                      &TrapezoidMapTriFinder::initialize,
-                      "initialize()");
-    add_noargs_method("print_tree",
-                      &TrapezoidMapTriFinder::print_tree,
-                      "print_tree()");
-}
-
-Py::Object
 TrapezoidMapTriFinder::initialize()
 {
-    _VERBOSE("TrapezoidMapTriFinder::initialize");
-
     clear();
-    const Triangulation& triang = get_triangulation();
+    const Triangulation& triang = _triangulation;
 
     // Set up points array, which contains all of the points in the
     // triangulation plus the 4 corners of the enclosing rectangle.
@@ -1581,25 +1397,19 @@ TrapezoidMapTriFinder::initialize()
     std::random_shuffle(_edges.begin()+2, _edges.end(), rng);
 
     // Add edges, one at a time, to tree.
-    unsigned int nedges = _edges.size();
-    for (unsigned int index = 2; index < nedges; ++index) {
+    size_t nedges = _edges.size();
+    for (size_t index = 2; index < nedges; ++index) {
         if (!add_edge_to_tree(_edges[index]))
-            throw Py::RuntimeError("Triangulation is invalid");
+            throw std::runtime_error("Triangulation is invalid");
         _tree->assert_valid(index == nedges-1);
     }
-
-    return Py::None();
 }
 
-Py::Object
+void
 TrapezoidMapTriFinder::print_tree()
 {
-    _VERBOSE("TrapezoidMapTriFinder::print_tree");
-
     assert(_tree != 0 && "Null Node tree");
     _tree->print();
-
-    return Py::None();
 }
 
 TrapezoidMapTriFinder::Edge::Edge(const Point* left_,
@@ -2176,6 +1986,7 @@ TrapezoidMapTriFinder::Trapezoid::set_upper_right(Trapezoid* upper_right_)
 }
 
 
+
 RandomNumberGenerator::RandomNumberGenerator(unsigned long seed)
     : _m(21870), _a(1291), _c(4621), _seed(seed % _m)
 {}
@@ -2185,159 +1996,4 @@ RandomNumberGenerator::operator()(unsigned long max_value)
 {
     _seed = (_seed*_a + _c) % _m;
     return (_seed*max_value) / _m;
-}
-
-
-
-
-
-#if PY_MAJOR_VERSION >= 3
-PyMODINIT_FUNC
-PyInit__tri(void)
-#else
-PyMODINIT_FUNC
-init_tri(void)
-#endif
-{
-    import_array();
-
-    static TriModule* triModule = NULL;
-    triModule = new TriModule();
-
-    #if PY_MAJOR_VERSION >= 3
-    return triModule->module().ptr();
-    #endif
-}
-
-TriModule::TriModule()
-    : Py::ExtensionModule<TriModule>("tri")
-{
-    Triangulation::init_type();
-    TriContourGenerator::init_type();
-    TrapezoidMapTriFinder::init_type();
-
-    add_varargs_method("Triangulation", &TriModule::new_triangulation,
-                       "Create and return new C++ Triangulation object");
-    add_varargs_method("TriContourGenerator", &TriModule::new_tricontourgenerator,
-                       "Create and return new C++ TriContourGenerator object");
-    add_varargs_method("TrapezoidMapTriFinder",
-                       &TriModule::new_TrapezoidMapTriFinder,
-                       "Create and return new C++ TrapezoidMapTriFinder object");
-
-    initialize("Module for unstructured triangular grids");
-}
-
-Py::Object TriModule::new_triangulation(const Py::Tuple &args)
-{
-    _VERBOSE("TriModule::new_triangulation");
-    args.verify_length(6);
-
-    // x and y.
-    PyArrayObject* x = (PyArrayObject*)PyArray_ContiguousFromObject(
-                           args[0].ptr(), PyArray_DOUBLE, 1, 1);
-    PyArrayObject* y = (PyArrayObject*)PyArray_ContiguousFromObject(
-                           args[1].ptr(), PyArray_DOUBLE, 1, 1);
-    if (x == 0 || y == 0 || PyArray_DIM(x,0) != PyArray_DIM(y,0)) {
-        Py_XDECREF(x);
-        Py_XDECREF(y);
-        throw Py::ValueError("x and y must be 1D arrays of the same length");
-    }
-
-    // triangles.
-    PyArrayObject* triangles = (PyArrayObject*)PyArray_ContiguousFromObject(
-                                   args[2].ptr(), PyArray_INT, 2, 2);
-    if (triangles == 0 || PyArray_DIM(triangles,1) != 3) {
-        Py_XDECREF(x);
-        Py_XDECREF(y);
-        Py_XDECREF(triangles);
-        throw Py::ValueError("triangles must be a 2D array of shape (?,3)");
-    }
-
-    // Optional mask.
-    PyArrayObject* mask = 0;
-    if (args[3].ptr() != 0 && args[3] != Py::None())
-    {
-        mask = (PyArrayObject*)PyArray_ContiguousFromObject(
-                   args[3].ptr(), PyArray_BOOL, 1, 1);
-        if (mask == 0 || PyArray_DIM(mask,0) != PyArray_DIM(triangles,0)) {
-            Py_XDECREF(x);
-            Py_XDECREF(y);
-            Py_XDECREF(triangles);
-            Py_XDECREF(mask);
-            throw Py::ValueError(
-                "mask must be a 1D array with the same length as the triangles array");
-        }
-    }
-
-    // Optional edges.
-    PyArrayObject* edges = 0;
-    if (args[4].ptr() != 0 && args[4] != Py::None())
-    {
-        edges = (PyArrayObject*)PyArray_ContiguousFromObject(
-                    args[4].ptr(), PyArray_INT, 2, 2);
-        if (edges == 0 || PyArray_DIM(edges,1) != 2) {
-            Py_XDECREF(x);
-            Py_XDECREF(y);
-            Py_XDECREF(triangles);
-            Py_XDECREF(mask);
-            Py_XDECREF(edges);
-            throw Py::ValueError("edges must be a 2D array with shape (?,2)");
-        }
-    }
-
-    // Optional neighbors.
-    PyArrayObject* neighbors = 0;
-    if (args[5].ptr() != 0 && args[5] != Py::None())
-    {
-        neighbors = (PyArrayObject*)PyArray_ContiguousFromObject(
-                        args[5].ptr(), PyArray_INT, 2, 2);
-        if (neighbors == 0 ||
-            PyArray_DIM(neighbors,0) != PyArray_DIM(triangles,0) ||
-            PyArray_DIM(neighbors,1) != PyArray_DIM(triangles,1)) {
-            Py_XDECREF(x);
-            Py_XDECREF(y);
-            Py_XDECREF(triangles);
-            Py_XDECREF(mask);
-            Py_XDECREF(edges);
-            Py_XDECREF(neighbors);
-            throw Py::ValueError(
-                "neighbors must be a 2D array with the same shape as the triangles array");
-        }
-    }
-
-    return Py::asObject(new Triangulation(x, y, triangles, mask, edges, neighbors));
-}
-
-Py::Object TriModule::new_tricontourgenerator(const Py::Tuple &args)
-{
-    _VERBOSE("TriModule::new_tricontourgenerator");
-    args.verify_length(2);
-
-    Py::Object tri = args[0];
-    if (!Triangulation::check(tri))
-        throw Py::ValueError("Expecting a C++ Triangulation object");
-
-    PyArrayObject* z = (PyArrayObject*)PyArray_ContiguousFromObject(
-                           args[1].ptr(), PyArray_DOUBLE, 1, 1);
-    if (z == 0 ||
-        PyArray_DIM(z,0) != ((Triangulation*)tri.ptr())->get_npoints()) {
-        Py_XDECREF(z);
-        throw Py::ValueError(
-            "z must be a 1D array with the same length as the x and y arrays");
-    }
-
-    return Py::asObject(new TriContourGenerator(tri, z));
-}
-
-Py::Object
-TriModule::new_TrapezoidMapTriFinder(const Py::Tuple &args)
-{
-    _VERBOSE("TriModule::new_TrapezoidMapTriFinder");
-    args.verify_length(1);
-
-    Py::Object triangulation = args[0];
-    if (!Triangulation::check(triangulation))
-        throw Py::ValueError("Expecting a C++ Triangulation object");
-
-    return Py::asObject(new TrapezoidMapTriFinder(triangulation));
 }

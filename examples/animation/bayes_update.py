@@ -1,8 +1,24 @@
-# update a distribution based on new data.
+"""
+================
+The Bayes update
+================
+
+This animation displays the posterior estimate updates as it is refitted when
+new data arrives.
+The vertical line represents the theoretical value to which the plotted
+distribution should converge.
+"""
+
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.stats as ss
 from matplotlib.animation import FuncAnimation
+
+
+def beta_pdf(x, a, b):
+    return (x**(a-1) * (1-x)**(b-1) * math.gamma(a + b)
+            / (math.gamma(a) * math.gamma(b)))
 
 
 class UpdateDist(object):
@@ -36,12 +52,15 @@ class UpdateDist(object):
         # Choose success based on exceed a threshold with a uniform pick
         if np.random.rand(1,) < self.prob:
             self.success += 1
-        y = ss.beta.pdf(self.x, self.success + 1, (i - self.success) + 1)
+        y = beta_pdf(self.x, self.success + 1, (i - self.success) + 1)
         self.line.set_data(self.x, y)
         return self.line,
 
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
+# Fixing random state for reproducibility
+np.random.seed(19680801)
+
+
+fig, ax = plt.subplots()
 ud = UpdateDist(ax, prob=0.7)
 anim = FuncAnimation(fig, ud, frames=np.arange(100), init_func=ud.init,
                      interval=100, blit=True)

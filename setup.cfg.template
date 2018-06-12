@@ -1,4 +1,4 @@
-# Rename this file to setup.cfg to modify matplotlib's
+# Rename this file to setup.cfg to modify Matplotlib's
 # build options.
 
 [egg_info]
@@ -8,17 +8,24 @@
 # This can be a single directory or a comma-delimited list of directories.
 #basedirlist = /usr
 
+[test]
+# If you plan to develop Matplotlib and run or add to the test suite,
+# set this to True.  It will download and build a specific version of
+# FreeType, and then use that to build the ft2font extension.  This
+# ensures that test images are exactly reproducible.
+#local_freetype = False
+
 [status]
 # To suppress display of the dependencies and their versions
 # at the top of the build log, uncomment the following line:
-#suppress = False
+#suppress = True 
 
 [packages]
-# There are a number of subpackages of matplotlib that are considered
-# optional.  They are all installed by default, but they may be turned
-# off here.
+# There are a number of subpackages of Matplotlib that are considered
+# optional. All except tests are installed by default, but that can
+# be changed here.
 #
-#tests = True
+#tests = False
 #sample_data = True
 #toolkits = True
 # Tests for the toolkits are only automatically installed
@@ -26,18 +33,16 @@
 #toolkits_tests = auto
 
 [gui_support]
-# Matplotlib supports multiple GUI toolkits, including Cocoa,
-# GTK, Fltk, MacOSX, Qt, Qt4, Tk, and WX. Support for many of
+# Matplotlib supports multiple GUI toolkits, including
+# GTK3, MacOSX, Qt4, Qt5, Tk, and WX. Support for many of
 # these toolkits requires AGG, the Anti-Grain Geometry library,
-# which is provided by matplotlib and built by default.
+# which is provided by Matplotlib and built by default.
 #
 # Some backends are written in pure Python, and others require
-# extension code to be compiled. By default, matplotlib checks for
+# extension code to be compiled. By default, Matplotlib checks for
 # these GUI toolkits during installation and, if present, compiles the
 # required extensions to support the toolkit.
 #
-# - GTK 2.x support of any kind requires the GTK runtime environment
-#   headers and PyGTK.
 # - Tk support requires Tk development headers and Tkinter.
 # - Mac OSX backend requires the Cocoa headers included with XCode.
 # - Windowing is MS-Windows specific, and requires the "windows.h"
@@ -48,7 +53,7 @@
 # therefore they are installed unconditionally.
 #
 # You can uncomment any the following lines to change this
-# behavior. Acceptible values are:
+# behavior. Acceptable values are:
 #
 #     True: build the extension. Exits with a warning if the
 #           required dependencies are not available
@@ -59,10 +64,8 @@
 #
 #agg = auto
 #cairo = auto
-#gtk = auto
 #gtk3agg = auto
 #gtk3cairo = auto
-#gtkagg = auto
 #macosx = auto
 #pyside = auto
 #qt4agg = auto
@@ -73,13 +76,18 @@
 [rc_options]
 # User-configurable options
 #
-# Default backend, one of: Agg, Cairo, CocoaAgg, GTK, GTKAgg, GTKCairo,
-# FltkAgg, MacOSX, Pdf, Ps, QtAgg, Qt4Agg, SVG, TkAgg, WX, WXAgg.
+# Default backend, one of: Agg, Cairo, GTK3Agg, GTK3Cairo, MacOSX, Pdf, Ps,
+# Qt4Agg, Qt5Agg, SVG, TkAgg, WX, WXAgg.
 #
-# The Agg, Ps, Pdf and SVG backends do not require external
-# dependencies. Do not choose GTK, GTKAgg, GTKCairo, MacOSX, or TkAgg
-# if you have disabled the relevent extension modules.  Agg will be used
-# by default.
+# The Agg, Ps, Pdf and SVG backends do not require external dependencies. Do
+# not choose MacOSX, or TkAgg if you have disabled the relevant extension
+# modules.  Agg will be used by default.
 #
 #backend = Agg
 #
+
+[package_data]
+# Package additional files found in the lib/matplotlib directories.
+#
+# On Windows, package DLL files.
+#dlls = True

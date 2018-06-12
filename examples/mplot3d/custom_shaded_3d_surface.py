@@ -1,6 +1,11 @@
 """
+=======================================
+Custom hillshading in a 3D surface plot
+=======================================
+
 Demonstrates using custom hillshading in a 3D surface plot.
 """
+
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cbook
 from matplotlib import cm
@@ -8,6 +13,7 @@ from matplotlib.colors import LightSource
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Load and format data
 filename = cbook.get_sample_data('jacksboro_fault_dem.npz', asfileobj=False)
 with np.load(filename) as dem:
     z = dem['elevation']
@@ -19,6 +25,7 @@ with np.load(filename) as dem:
 region = np.s_[5:50, 5:50]
 x, y, z = x[region], y[region], z[region]
 
+# Set up plot
 fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
 
 ls = LightSource(270, 45)
@@ -29,4 +36,3 @@ surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, facecolors=rgb,
                        linewidth=0, antialiased=False, shade=False)
 
 plt.show()
-

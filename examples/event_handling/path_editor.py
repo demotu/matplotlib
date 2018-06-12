@@ -1,3 +1,13 @@
+"""
+===========
+Path Editor
+===========
+
+Sharing events across GUIs.
+
+This example demonstrates a cross-GUI application using Matplotlib event
+handling to interact with and modify objects on the canvas.
+"""
 import numpy as np
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
@@ -25,7 +35,7 @@ patch = mpatches.PathPatch(path, facecolor='green', edgecolor='yellow', alpha=0.
 ax.add_patch(patch)
 
 
-class PathInteractor:
+class PathInteractor(object):
     """
     An path editor.
 
@@ -49,9 +59,9 @@ class PathInteractor:
 
         x, y = zip(*self.pathpatch.get_path().vertices)
 
-        self.line, = ax.plot(x,y,marker='o', markerfacecolor='r', animated=True)
+        self.line, = ax.plot(x, y, marker='o', markerfacecolor='r', animated=True)
 
-        self._ind = None # the active vert
+        self._ind = None  # the active vert
 
         canvas.mpl_connect('draw_event', self.draw_callback)
         canvas.mpl_connect('button_press_event', self.button_press_callback)
@@ -80,48 +90,59 @@ class PathInteractor:
         xy = np.asarray(self.pathpatch.get_path().vertices)
         xyt = self.pathpatch.get_transform().transform(xy)
         xt, yt = xyt[:, 0], xyt[:, 1]
-        d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
+        d = np.sqrt((xt - event.x)**2 + (yt - event.y)**2)
         ind = d.argmin()
 
-        if d[ind]>=self.epsilon:
+        if d[ind] >= self.epsilon:
             ind = None
 
         return ind
 
     def button_press_callback(self, event):
         'whenever a mouse button is pressed'
-        if not self.showverts: return
-        if event.inaxes==None: return
-        if event.button != 1: return
+        if not self.showverts:
+            return
+        if event.inaxes is None:
+            return
+        if event.button != 1:
+            return
         self._ind = self.get_ind_under_point(event)
 
     def button_release_callback(self, event):
         'whenever a mouse button is released'
-        if not self.showverts: return
-        if event.button != 1: return
+        if not self.showverts:
+            return
+        if event.button != 1:
+            return
         self._ind = None
 
     def key_press_callback(self, event):
         'whenever a key is pressed'
-        if not event.inaxes: return
-        if event.key=='t':
+        if not event.inaxes:
+            return
+        if event.key == 't':
             self.showverts = not self.showverts
             self.line.set_visible(self.showverts)
-            if not self.showverts: self._ind = None
+            if not self.showverts:
+                self._ind = None
 
         self.canvas.draw()
 
     def motion_notify_callback(self, event):
         'on mouse movement'
-        if not self.showverts: return
-        if self._ind is None: return
-        if event.inaxes is None: return
-        if event.button != 1: return
-        x,y = event.xdata, event.ydata
+        if not self.showverts:
+            return
+        if self._ind is None:
+            return
+        if event.inaxes is None:
+            return
+        if event.button != 1:
+            return
+        x, y = event.xdata, event.ydata
 
         vertices = self.pathpatch.get_path().vertices
 
-        vertices[self._ind] = x,y
+        vertices[self._ind] = x, y
         self.line.set_data(zip(*vertices))
 
         self.canvas.restore_region(self.background)
@@ -132,7 +153,7 @@ class PathInteractor:
 
 interactor = PathInteractor(patch)
 ax.set_title('drag vertices to update path')
-ax.set_xlim(-3,4)
-ax.set_ylim(-3,4)
+ax.set_xlim(-3, 4)
+ax.set_ylim(-3, 4)
 
 plt.show()

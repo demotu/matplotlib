@@ -7,15 +7,9 @@
  */
 #include "Python.h"
 #include "numpy/noprefix.h"
-#include "qhull/qhull_a.h"
+#include "libqhull/qhull_a.h"
 #include <stdio.h>
 
-
-#if PY_MAJOR_VERSION >= 3
-#define PY3K 1
-#else
-#define PY3K 0
-#endif
 
 #ifndef MPL_DEVNULL
 #error "MPL_DEVNULL must be defined as the OS-equivalent of /dev/null"
@@ -108,6 +102,10 @@ delaunay_impl(int npoints, const double* x, const double* y,
     PyArrayObject* neighbors = NULL;
     int* triangles_ptr;
     int* neighbors_ptr;
+    double x_mean = 0.0;
+    double y_mean = 0.0;
+
+    QHULL_LIB_CHECK
 
     /* Allocate points. */
     points = (coordT*)malloc(npoints*ndim*sizeof(coordT));
@@ -117,10 +115,18 @@ delaunay_impl(int npoints, const double* x, const double* y,
         goto error_before_qhull;
     }
 
+    /* Determine mean x, y coordinates. */
+    for (i = 0; i < npoints; ++i) {
+        x_mean += x[i];
+        y_mean += y[i];
+    }
+    x_mean /= npoints;
+    y_mean /= npoints;
+
     /* Prepare points array to pass to qhull. */
     for (i = 0; i < npoints; ++i) {
-        points[2*i  ] = x[i];
-        points[2*i+1] = y[i];
+        points[2*i  ] = x[i] - x_mean;
+        points[2*i+1] = y[i] - y_mean;
     }
 
     /* qhull expects a FILE* to write errors to. */
@@ -175,14 +181,14 @@ delaunay_impl(int npoints, const double* x, const double* y,
     /* Allocate python arrays to return. */
     dims[0] = ntri;
     dims[1] = 3;
-    triangles = (PyArrayObject*)PyArray_SimpleNew(ndim, dims, PyArray_INT);
+    triangles = (PyArrayObject*)PyArray_SimpleNew(ndim, dims, NPY_INT);
     if (triangles == NULL) {
         PyErr_SetString(PyExc_MemoryError,
                         "Could not allocate triangles array in qhull.delaunay");
         goto error;
     }
 
-    neighbors = (PyArrayObject*)PyArray_SimpleNew(ndim, dims, PyArray_INT);
+    neighbors = (PyArrayObject*)PyArray_SimpleNew(ndim, dims, NPY_INT);
     if (neighbors == NULL) {
         PyErr_SetString(PyExc_MemoryError,
                         "Could not allocate neighbors array in qhull.delaunay");
@@ -267,9 +273,9 @@ delaunay(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    xarray = (PyArrayObject*)PyArray_ContiguousFromObject(xarg, PyArray_DOUBLE,
+    xarray = (PyArrayObject*)PyArray_ContiguousFromObject(xarg, NPY_DOUBLE,
                                                           1, 1);
-    yarray = (PyArrayObject*)PyArray_ContiguousFromObject(yarg, PyArray_DOUBLE,
+    yarray = (PyArrayObject*)PyArray_ContiguousFromObject(yarg, NPY_DOUBLE,
                                                           1, 1);
     if (xarray == 0 || yarray == 0 ||
         PyArray_DIM(xarray,0) != PyArray_DIM(yarray, 0)) {
@@ -310,7 +316,7 @@ delaunay(PyObject *self, PyObject *args)
 
 /* Return qhull version string for assistance in debugging. */
 static PyObject*
-version()
+version(void)
 {
     return PyBytes_FromString(qh_version);
 }
@@ -321,7 +327,6 @@ static PyMethodDef qhull_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-#if PY3K
 static struct PyModuleDef qhull_module = {
     PyModuleDef_HEAD_INIT,
     "qhull",
@@ -331,33 +336,18 @@ static struct PyModuleDef qhull_module = {
     NULL, NULL, NULL, NULL
 };
 
-#define ERROR_RETURN return NULL
-
 PyMODINIT_FUNC
 PyInit__qhull(void)
-#else
-#define ERROR_RETURN return
-
-PyMODINIT_FUNC
-init_qhull(void)
-#endif
 {
     PyObject* m;
 
-    #if PY3K
-        m = PyModule_Create(&qhull_module);
-    #else
-        m = Py_InitModule3("_qhull", qhull_methods,
-                           "Computing Delaunay triangulations.\n");
-    #endif
+    m = PyModule_Create(&qhull_module);
 
     if (m == NULL) {
-        ERROR_RETURN;
+        return NULL;
     }
 
     import_array();
 
-    #if PY3K
-        return m;
-    #endif
+    return m;
 }

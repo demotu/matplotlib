@@ -4,7 +4,7 @@
 Event handling and picking
 **************************
 
-matplotlib works with a number of user interface toolkits (wxpython,
+Matplotlib works with a number of user interface toolkits (wxpython,
 tkinter, qt4, gtk, and macosx) and in order to support features like
 interactive panning and zooming of figures, it is helpful to the
 developers to have an API for interacting with the figure via key
@@ -29,13 +29,13 @@ connect your function to the event manager, which is part of the
 example that prints the location of the mouse click and which button
 was pressed::
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    fig, ax = plt.subplots()
     ax.plot(np.random.rand(10))
 
     def onclick(event):
-        print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-            event.button, event.x, event.y, event.xdata, event.ydata)
+        print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+              ('double' if event.dblclick else 'single', event.button,
+               event.x, event.y, event.xdata, event.ydata))
 
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
@@ -47,22 +47,24 @@ disconnect the callback, just call::
     fig.canvas.mpl_disconnect(cid)
 
 .. note::
-   The canvas retains only weak references to the callbacks.  Therefore
-   if a callback is a method of a class instance, you need to retain
-   a reference to that instance.  Otherwise the instance will be
-   garbage-collected and the callback will vanish.
+   The canvas retains only weak references to instance methods used as
+   callbacks.  Therefore, you need to retain a reference to instances owning
+   such methods.  Otherwise the instance will be garbage-collected and the
+   callback will vanish.
+
+   This does not affect free functions used as callbacks.
 
 
 Here are the events that you can connect to, the class instances that
-are sent back to you when the event occurs, and the event descriptions
+are sent back to you when the event occurs, and the event descriptions:
 
 
-=======================  ======================================================================================
+=======================  =============================================================================================
 Event name               Class and description
-=======================  ======================================================================================
+=======================  =============================================================================================
 'button_press_event'     :class:`~matplotlib.backend_bases.MouseEvent`     - mouse button is pressed
 'button_release_event'   :class:`~matplotlib.backend_bases.MouseEvent`     - mouse button is released
-'draw_event'             :class:`~matplotlib.backend_bases.DrawEvent`      - canvas draw
+'draw_event'             :class:`~matplotlib.backend_bases.DrawEvent`      - canvas draw (but before screen update)
 'key_press_event'        :class:`~matplotlib.backend_bases.KeyEvent`       - key is pressed
 'key_release_event'      :class:`~matplotlib.backend_bases.KeyEvent`       - key is released
 'motion_notify_event'    :class:`~matplotlib.backend_bases.MouseEvent`     - mouse motion
@@ -73,7 +75,7 @@ Event name               Class and description
 'figure_leave_event'     :class:`~matplotlib.backend_bases.LocationEvent`  - mouse leaves a figure
 'axes_enter_event'       :class:`~matplotlib.backend_bases.LocationEvent`  - mouse enters a new axes
 'axes_leave_event'       :class:`~matplotlib.backend_bases.LocationEvent`  - mouse leaves an axes
-=======================  ======================================================================================
+=======================  =============================================================================================
 
 .. _event-attributes:
 
@@ -128,7 +130,7 @@ is created every time a mouse is pressed::
             self.cid = line.figure.canvas.mpl_connect('button_press_event', self)
 
         def __call__(self, event):
-            print 'click', event
+            print('click', event)
             if event.inaxes!=self.line.axes: return
             self.xs.append(event.xdata)
             self.ys.append(event.ydata)
@@ -196,7 +198,7 @@ Here is the solution::
 
             contains, attrd = self.rect.contains(event)
             if not contains: return
-            print 'event contains', self.rect.xy
+            print('event contains', self.rect.xy)
             x0, y0 = self.rect.xy
             self.press = x0, y0, event.xdata, event.ydata
 
@@ -207,7 +209,8 @@ Here is the solution::
             x0, y0, xpress, ypress = self.press
             dx = event.xdata - xpress
             dy = event.ydata - ypress
-            #print 'x0=%f, xpress=%f, event.xdata=%f, dx=%f, x0+dx=%f'%(x0, xpress, event.xdata, dx, x0+dx)
+            #print('x0=%f, xpress=%f, event.xdata=%f, dx=%f, x0+dx=%f' %
+            #      (x0, xpress, event.xdata, dx, x0+dx))
             self.rect.set_x(x0+dx)
             self.rect.set_y(y0+dy)
 
@@ -239,8 +242,8 @@ Here is the solution::
 
 **Extra credit**: use the animation blit techniques discussed in the
 `animations recipe
-<http://www.scipy.org/Cookbook/Matplotlib/Animations>`_ to make the
-animated drawing faster and smoother.
+<https://scipy-cookbook.readthedocs.io/items/Matplotlib_Animations.html>`_ to
+make the animated drawing faster and smoother.
 
 Extra credit solution::
 
@@ -271,7 +274,7 @@ Extra credit solution::
             if DraggableRectangle.lock is not None: return
             contains, attrd = self.rect.contains(event)
             if not contains: return
-            print 'event contains', self.rect.xy
+            print('event contains', self.rect.xy)
             x0, y0 = self.rect.xy
             self.press = x0, y0, event.xdata, event.ydata
             DraggableRectangle.lock = self
@@ -361,22 +364,22 @@ background that the mouse is over::
     import matplotlib.pyplot as plt
 
     def enter_axes(event):
-        print 'enter_axes', event.inaxes
+        print('enter_axes', event.inaxes)
         event.inaxes.patch.set_facecolor('yellow')
         event.canvas.draw()
 
     def leave_axes(event):
-        print 'leave_axes', event.inaxes
+        print('leave_axes', event.inaxes)
         event.inaxes.patch.set_facecolor('white')
         event.canvas.draw()
 
     def enter_figure(event):
-        print 'enter_figure', event.canvas.figure
+        print('enter_figure', event.canvas.figure)
         event.canvas.figure.patch.set_facecolor('red')
         event.canvas.draw()
 
     def leave_figure(event):
-        print 'leave_figure', event.canvas.figure
+        print('leave_figure', event.canvas.figure)
         event.canvas.figure.patch.set_facecolor('grey')
         event.canvas.draw()
 
@@ -403,14 +406,13 @@ background that the mouse is over::
     plt.show()
 
 
-
 .. _object-picking:
 
 Object picking
 ==============
 
 You can enable picking by setting the ``picker`` property of an
-:class:`~matplotlib.artist.Artist` (eg a matplotlib
+:class:`~matplotlib.artist.Artist` (e.g., a matplotlib
 :class:`~matplotlib.lines.Line2D`, :class:`~matplotlib.text.Text`,
 :class:`~matplotlib.patches.Patch`, :class:`~matplotlib.patches.Polygon`,
 :class:`~matplotlib.patches.AxesImage`, etc...)
@@ -426,10 +428,10 @@ There are a variety of meanings of the ``picker`` property:
 
     ``float``
 	if picker is a number it is interpreted as an epsilon tolerance in
-	points and the the artist will fire off an event if its data is
+	points and the artist will fire off an event if its data is
 	within epsilon of the mouse event.  For some artists like lines
 	and patch collections, the artist may provide additional data to
-	the pick event that is generated, eg the indices of the data
+	the pick event that is generated, e.g., the indices of the data
 	within epsilon of the pick event.
 
     ``function``
@@ -457,7 +459,7 @@ your callback is always fired with two attributes:
 
     ``mouseevent`` the mouse event that generate the pick event.  The
 	mouse event in turn has attributes like ``x`` and ``y`` (the
-	coords in display space, eg pixels from left, bottom) and xdata,
+	coords in display space, e.g., pixels from left, bottom) and xdata,
 	ydata (the coords in data space).  Additionally, you can get
 	information about which buttons were pressed, which keys were
 	pressed, which :class:`~matplotlib.axes.Axes` the mouse is over,
@@ -471,7 +473,7 @@ your callback is always fired with two attributes:
 Additionally, certain artists like :class:`~matplotlib.lines.Line2D`
 and :class:`~matplotlib.collections.PatchCollection` may attach
 additional meta data like the indices into the data that meet the
-picker criteria (eg all the points in the line that are within the
+picker criteria (e.g., all the points in the line that are within the
 specified epsilon tolerance)
 
 Simple picking example
@@ -503,7 +505,8 @@ properties of the line.  Here is the code::
         xdata = thisline.get_xdata()
         ydata = thisline.get_ydata()
         ind = event.ind
-        print 'onpick points:', zip(xdata[ind], ydata[ind])
+        points = tuple(zip(xdata[ind], ydata[ind]))
+        print('onpick points:', points)
 
     fig.canvas.mpl_connect('pick_event', onpick)
 

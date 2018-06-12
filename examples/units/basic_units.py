@@ -1,3 +1,10 @@
+"""
+===========
+Basic Units
+===========
+
+"""
+
 import math
 
 import numpy as np
@@ -17,9 +24,9 @@ class ProxyDelegate(object):
         return self.proxy_type(self.fn_name, obj)
 
 
-class TaggedValueMeta (type):
+class TaggedValueMeta(type):
     def __init__(cls, name, bases, dict):
-        for fn_name in cls._proxies.keys():
+        for fn_name in cls._proxies:
             try:
                 dummy = getattr(cls, fn_name)
             except AttributeError:
@@ -61,9 +68,8 @@ class ConvertReturnProxy(PassThroughProxy):
 
     def __call__(self, *args):
         ret = PassThroughProxy.__call__(self, *args)
-        if (type(ret) == type(NotImplemented)):
-            return NotImplemented
-        return TaggedValue(ret, self.unit)
+        return (NotImplemented if ret is NotImplemented
+                else TaggedValue(ret, self.unit))
 
 
 class ConvertAllProxy(PassThroughProxy):
@@ -95,15 +101,15 @@ class ConvertAllProxy(PassThroughProxy):
                     arg_units.append(None)
         converted_args = tuple(converted_args)
         ret = PassThroughProxy.__call__(self, *converted_args)
-        if (type(ret) == type(NotImplemented)):
+        if ret is NotImplemented:
             return NotImplemented
         ret_unit = unit_resolver(self.fn_name, arg_units)
-        if (ret_unit == NotImplemented):
+        if ret_unit is NotImplemented:
             return NotImplemented
         return TaggedValue(ret, ret_unit)
 
 
-class _TaggedValue(object):
+class TaggedValue(metaclass=TaggedValueMeta):
 
     _proxies = {'__add__': ConvertAllProxy,
                 '__sub__': ConvertAllProxy,
@@ -123,36 +129,33 @@ class _TaggedValue(object):
                           {})
             if subcls not in units.registry:
                 units.registry[subcls] = basicConverter
-            return object.__new__(subcls, value, unit)
+            return object.__new__(subcls)
         except TypeError:
             if cls not in units.registry:
                 units.registry[cls] = basicConverter
-            return object.__new__(cls, value, unit)
+            return object.__new__(cls)
 
     def __init__(self, value, unit):
         self.value = value
         self.unit = unit
         self.proxy_target = self.value
 
-    def  __getattribute__(self, name):
-        if (name.startswith('__')):
+    def __getattribute__(self, name):
+        if name.startswith('__'):
             return object.__getattribute__(self, name)
         variable = object.__getattribute__(self, 'value')
-        if (hasattr(variable, name) and name not in self.__class__.__dict__):
+        if hasattr(variable, name) and name not in self.__class__.__dict__:
             return getattr(variable, name)
         return object.__getattribute__(self, name)
 
-    def __array__(self, t=None, context=None):
-        if t is not None:
-            return np.asarray(self.value).astype(t)
-        else:
-            return np.asarray(self.value, 'O')
+    def __array__(self, dtype=object):
+        return np.asarray(self.value).astype(dtype)
 
     def __array_wrap__(self, array, context):
         return TaggedValue(array, self.unit)
 
     def __repr__(self):
-        return 'TaggedValue(' + repr(self.value) + ', ' + repr(self.unit) + ')'
+        return 'TaggedValue({!r}, {!r})'.format(self.value, self.unit)
 
     def __str__(self):
         return str(self.value) + ' in ' + str(self.unit)
@@ -161,23 +164,17 @@ class _TaggedValue(object):
         return len(self.value)
 
     def __iter__(self):
-        class IteratorProxy(object):
-            def __init__(self, iter, unit):
-                self.iter = iter
-                self.unit = unit
-
-            def __next__(self):
-                value = next(self.iter)
-                return TaggedValue(value, self.unit)
-            next = __next__  # for Python 2
-        return IteratorProxy(iter(self.value), self.unit)
+        # Return a generator expression rather than use `yield`, so that
+        # TypeError is raised by iter(self) if appropriate when checking for
+        # iterability.
+        return (TaggedValue(inner, self.unit) for inner in self.value)
 
     def get_compressed_copy(self, mask):
         new_value = np.ma.masked_array(self.value, mask=mask).compressed()
         return TaggedValue(new_value, self.unit)
 
     def convert_to(self, unit):
-        if (unit == self.unit or not unit):
+        if unit == self.unit or not unit:
             return self
         new_value = self.unit.convert_value_to(self.value, unit)
         return TaggedValue(new_value, unit)
@@ -189,9 +186,6 @@ class _TaggedValue(object):
         return self.unit
 
 
-TaggedValue = TaggedValueMeta('TaggedValue', (_TaggedValue, ), {})
-
-
 class BasicUnit(object):
     def __init__(self, name, fullname=None):
         self.name = name
@@ -201,7 +195,7 @@ class BasicUnit(object):
         self.conversions = dict()
 
     def __repr__(self):
-        return 'BasicUnit(%s)'%self.name
+        return 'BasicUnit(%s)' % self.name
 
     def __str__(self):
         return self.fullname
@@ -216,7 +210,7 @@ class BasicUnit(object):
             value = rhs.get_value()
             unit = rhs.get_unit()
             unit = unit_resolver('__mul__', (self, unit))
-        if (unit == NotImplemented):
+        if unit is NotImplemented:
             return NotImplemented
         return TaggedValue(value, unit)
 
@@ -311,7 +305,7 @@ def rad_fn(x, pos=None):
     elif n == 2:
         return r'$\pi$'
     elif n % 2 == 0:
-        return r'$%s\pi$' % (n/2,)
+        return r'$%s\pi$' % (n//2,)
     else:
         return r'$%s\pi/2$' % (n,)
 
@@ -321,13 +315,13 @@ class BasicUnitConverter(units.ConversionInterface):
     def axisinfo(unit, axis):
         'return AxisInfo instance for x and unit'
 
-        if unit==radians:
+        if unit == radians:
             return units.AxisInfo(
                 majloc=ticker.MultipleLocator(base=np.pi/2),
                 majfmt=ticker.FuncFormatter(rad_fn),
                 label=unit.fullname,
             )
-        elif unit==degrees:
+        elif unit == degrees:
             return units.AxisInfo(
                 majloc=ticker.AutoLocator(),
                 majfmt=ticker.FormatStrFormatter(r'$%i^\circ$'),

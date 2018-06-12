@@ -1,10 +1,16 @@
 """
+==========
+pcolormesh
+==========
+
 Shows how to combine Normalization and Colormap instances to draw
-"levels" in pcolor, pcolormesh and imshow type plots in a similar
+"levels" in :meth:`~.axes.Axes.pcolor`, :meth:`~.axes.Axes.pcolormesh`
+and :meth:`~.axes.Axes.imshow` type plots in a similar
 way to the levels keyword argument to contour/contourf.
 
 """
 
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm
 from matplotlib.ticker import MaxNLocator
@@ -18,7 +24,7 @@ dx, dy = 0.05, 0.05
 y, x = np.mgrid[slice(1, 5 + dy, dy),
                 slice(1, 5 + dx, dx)]
 
-z = np.sin(x) ** 10 + np.cos(10 + y * x) * np.cos(x)
+z = np.sin(x)**10 + np.cos(10 + y*x) * np.cos(x)
 
 # x and y are bounds, so z should be the value *inside* those bounds.
 # Therefore, remove the last value from the z array.
@@ -31,22 +37,41 @@ levels = MaxNLocator(nbins=15).tick_values(z.min(), z.max())
 cmap = plt.get_cmap('PiYG')
 norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
 
-plt.subplot(2, 1, 1)
-im = plt.pcolormesh(x, y, z, cmap=cmap, norm=norm)
-plt.colorbar()
-# set the limits of the plot to the limits of the data
-plt.axis([x.min(), x.max(), y.min(), y.max()])
-plt.title('pcolormesh with levels')
+fig, (ax0, ax1) = plt.subplots(nrows=2)
+
+im = ax0.pcolormesh(x, y, z, cmap=cmap, norm=norm)
+fig.colorbar(im, ax=ax0)
+ax0.set_title('pcolormesh with levels')
 
 
-plt.subplot(2, 1, 2)
 # contours are *point* based plots, so convert our bound into point
 # centers
-plt.contourf(x[:-1, :-1] + dx / 2.,
-             y[:-1, :-1] + dy / 2., z, levels=levels,
-             cmap=cmap)
-plt.colorbar()
-plt.title('contourf with levels')
+cf = ax1.contourf(x[:-1, :-1] + dx/2.,
+                  y[:-1, :-1] + dy/2., z, levels=levels,
+                  cmap=cmap)
+fig.colorbar(cf, ax=ax1)
+ax1.set_title('contourf with levels')
 
+# adjust spacing between subplots so `ax1` title and `ax0` tick labels
+# don't overlap
+fig.tight_layout()
 
 plt.show()
+
+#############################################################################
+#
+# ------------
+#
+# References
+# """"""""""
+#
+# The use of the following functions and methods is shown in this example:
+
+matplotlib.axes.Axes.pcolormesh
+matplotlib.pyplot.pcolormesh
+matplotlib.axes.Axes.contourf
+matplotlib.pyplot.contourf
+matplotlib.figure.Figure.colorbar
+matplotlib.pyplot.colorbar
+matplotlib.colors.BoundaryNorm
+matplotlib.ticker.MaxNLocator

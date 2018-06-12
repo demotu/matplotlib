@@ -1,67 +1,104 @@
 .. _testing:
 
-Testing
-=======
+============================
+Developer's tips for testing
+============================
 
-Matplotlib has a testing infrastructure based on nose_, making it easy
-to write new tests. The tests are in :mod:`matplotlib.tests`, and
-customizations to the nose testing infrastructure are in
-:mod:`matplotlib.testing`. (There is other old testing cruft around,
-please ignore it while we consolidate our testing to these locations.)
+Matplotlib's testing infrastructure depends on pytest_. The tests are in
+:file:`lib/matplotlib/tests`, and customizations to the pytest testing
+infrastructure are in :mod:`matplotlib.testing`.
 
-.. _nose: http://somethingaboutorange.com/mrl/projects/nose/
+.. _pytest: http://doc.pytest.org/en/latest/
+.. _Ghostscript: https://www.ghostscript.com/
+.. _Inkscape: https://inkscape.org
+.. _pytest-cov: https://pytest-cov.readthedocs.io/en/latest/
+.. _pytest-pep8: https://pypi.python.org/pypi/pytest-pep8
+.. _pytest-xdist: https://pypi.python.org/pypi/pytest-xdist
+.. _pytest-timeout: https://pypi.python.org/pypi/pytest-timeout
 
 Requirements
 ------------
 
+Install the latest version of Matplotlib as documented in
+:ref:`installing_for_devs` In particular, follow the instructions to use a
+local FreeType build
+
 The following software is required to run the tests:
 
-  - nose_, version 1.0 or later
+  - pytest_ (>=3.4)
+  - Ghostscript_ (to render PDF files)
+  - Inkscape_ (to render SVG files)
 
-  - `Ghostscript <http://pages.cs.wisc.edu/~ghost/>`_ (to render PDF
-    files)
+Optionally you can install:
 
-  - `Inkscape <http://inkscape.org>`_ (to render SVG files)
+  - pytest-cov_ (>=2.3.1) to collect coverage information
+  - pytest-pep8_ to test coding standards
+  - pytest-timeout_ to limit runtime in case of stuck tests
+  - pytest-xdist_ to run tests in parallel
+
 
 Running the tests
 -----------------
 
-Running the tests is simple. Make sure you have nose installed and run
-the script :file:`tests.py` in the root directory of the distribution.
-The script can take any of the usual `nosetest arguments`_, such as
+Running the tests is simple. Make sure you have pytest installed and run::
 
-===================  ===========
-``-v``               increase verbosity
-``-d``               detailed error messages
-``--with-coverage``  enable collecting coverage information
-===================  ===========
+   pytest
 
-To run a single test from the command line, you can provide a
-dot-separated path to the module followed by the function separated by
-a colon, e.g., (this is assuming the test is installed)::
+or::
 
-  python tests.py matplotlib.tests.test_simplification:test_clipping
+   python tests.py
 
-If you want to run the full test suite, but want to save wall time try running the
-tests in parallel::
+in the root directory of the distribution. The script takes a set of
+commands, such as:
 
-  python ../matplotlib/tests.py -sv --processes=5 --process-timeout=300
+========================  ===========
+``--pep8``                Perform pep8 checks (requires pytest-pep8_)
+``-m "not network"``      Disable tests that require network access
+========================  ===========
 
-as we do on Travis.ci.
+Additional arguments are passed on to pytest. See the pytest documentation for
+`supported arguments`_. Some of the more important ones are given here:
 
+=============================  ===========
+``--verbose``                  Be more verbose
+``--n NUM``                    Run tests in parallel over NUM
+                               processes (requires pytest-xdist_)
+``--timeout=SECONDS``          Set timeout for results from each test
+                               process (requires pytest-timeout_)
+``--capture=no`` or ``-s``     Do not capture stdout
+=============================  ===========
 
-An alternative implementation that does not look at command line
-arguments works from within Python::
+To run a single test from the command line, you can provide a file path,
+optionally followed by the function separated by two colons, e.g., (tests do
+not need to be installed, but Matplotlib should be)::
+
+  pytest lib/matplotlib/tests/test_simplification.py::test_clipping
+
+or, if tests are installed, a dot-separated path to the module, optionally
+followed by the function separated by two colons, such as::
+
+  pytest --pyargs matplotlib.tests.test_simplification::test_clipping
+
+If you want to run the full test suite, but want to save wall time try
+running the tests in parallel::
+
+  pytest --verbose -n 5
+
+Depending on your version of Python and pytest-xdist, you may need to set
+``PYTHONHASHSEED`` to a fixed value when running in parallel::
+
+  PYTHONHASHSEED=0 pytest --verbose -n 5
+
+An alternative implementation that does not look at command line arguments
+and works from within Python is to run the tests from the Matplotlib library
+function :func:`matplotlib.test`::
 
   import matplotlib
   matplotlib.test()
 
-.. _`nosetest arguments`: http://somethingaboutorange.com/mrl/projects/nose/1.0.0/usage.html
 
+.. _supported arguments: http://doc.pytest.org/en/latest/usage.html
 
-Running tests by any means other than `matplotlib.test()`
-does not load the nose "knownfailureif" (Known failing tests) plugin,
-causing known-failing tests to fail for real.
 
 Writing a simple test
 ---------------------
@@ -69,31 +106,38 @@ Writing a simple test
 Many elements of Matplotlib can be tested using standard tests. For
 example, here is a test from :mod:`matplotlib.tests.test_basic`::
 
-  from nose.tools import assert_equal
-
   def test_simple():
       """
       very simple example test
       """
-      assert_equal(1+1,2)
+      assert 1 + 1 == 2
 
-Nose determines which functions are tests by searching for functions
-beginning with "test" in their name.
+Pytest determines which functions are tests by searching for files whose names
+begin with ``"test_"`` and then within those files for functions beginning with
+``"test"`` or classes beginning with ``"Test"``.
 
-If the test has side effects that need to be cleaned up, such as
-creating figures using the pyplot interface, use the ``@cleanup``
-decorator::
+Some tests have internal side effects that need to be cleaned up after their
+execution (such as created figures or modified rc params). The pytest fixture
+:func:`~matplotlib.testing.conftest.mpl_test_settings` will automatically clean
+these up; there is no need to do anything further.
 
-  from matplotlib.testing.decorators import cleanup
+Random data in tests
+--------------------
 
-  @cleanup
-  def test_create_figure():
-      """
-      very simple example test that creates a figure using pyplot.
-      """
-      fig = figure()
-      ...
+Random data can is a very convenient way to generate data for examples,
+however the randomness is problematic for testing (as the tests
+must be deterministic!).  To work around this set the seed in each test.
+For numpy use::
 
+  import numpy as np
+  np.random.seed(19680801)
+
+and Python's random number generator::
+
+  import random
+  random.seed(19680801)
+
+The seed is John Hunter's birthday.
 
 Writing an image comparison test
 --------------------------------
@@ -102,15 +146,15 @@ Writing an image based test is only slightly more difficult than a
 simple test. The main consideration is that you must specify the
 "baseline", or expected, images in the
 :func:`~matplotlib.testing.decorators.image_comparison` decorator. For
-example, this test generates a single image and automatically tests
-it::
+example, this test generates a single image and automatically tests it::
 
   import numpy as np
   import matplotlib
   from matplotlib.testing.decorators import image_comparison
   import matplotlib.pyplot as plt
 
-  @image_comparison(baseline_images=['spines_axes_positions'])
+  @image_comparison(baseline_images=['spines_axes_positions'],
+                    extensions=['png'])
   def test_spines_axes_positions():
       # SF bug 2852168
       fig = plt.figure()
@@ -128,23 +172,28 @@ it::
 
 The first time this test is run, there will be no baseline image to
 compare against, so the test will fail.  Copy the output images (in
-this case `result_images/test_category/spines_axes_positions.*`) to
+this case `result_images/test_category/spines_axes_positions.png`) to
 the correct subdirectory of `baseline_images` tree in the source
 directory (in this case
-`lib/matplotlib/tests/baseline_images/test_category`).  Note carefully
-the `.*` at the end: this will copy only the images we need to include
-in the `git` repository.  The files ending in `_pdf.png` and
-`_svg.png` are converted from the `pdf` and `svg` originals on the fly
-and do not need to be in the respository.  Put these new files under
-source code revision control (with `git add`).  When rerunning the
-tests, they should now pass.
+`lib/matplotlib/tests/baseline_images/test_category`).  Put this new
+file under source code revision control (with `git add`).  When
+rerunning the tests, they should now pass.
+
+The :func:`~matplotlib.testing.decorators.image_comparison` decorator
+defaults to generating ``png``, ``pdf`` and ``svg`` output, but in
+interest of keeping the size of the library from ballooning we should only
+include the ``svg`` or ``pdf`` outputs if the test is explicitly exercising
+a feature dependent on that backend.
 
 There are two optional keyword arguments to the `image_comparison`
 decorator:
 
-   - `extensions`: If you only wish to test some of the image formats
-     (rather than the default `png`, `svg` and `pdf` formats), pass a
-     list of the extensions to test.
+   - `extensions`: If you only wish to test additional image formats
+     (rather than just `png`), pass any additional file types in the
+     list of the extensions to test.  When copying the new
+     baseline files be sure to only copy the output files, not their
+     conversions to ``png``.  For example only copy the files
+     ending in ``pdf``, not in ``_pdf.png``.
 
    - `tol`: This is the image matching tolerance, the default `1e-3`.
      If some variation is expected in the image between runs, this
@@ -153,24 +202,22 @@ decorator:
 Known failing tests
 -------------------
 
-If you're writing a test, you may mark it as a known failing test with
-the :func:`~matplotlib.testing.decorators.knownfailureif`
-decorator. This allows the test to be added to the test suite and run
-on the buildbots without causing undue alarm. For example, although
-the following test will fail, it is an expected failure::
+If you're writing a test, you may mark it as a known failing test with the
+:func:`pytest.mark.xfail` decorator. This allows the test to be added to the
+test suite and run on the buildbots without causing undue alarm. For example,
+although the following test will fail, it is an expected failure::
 
-  from nose.tools import assert_equal
-  from matplotlib.testing.decorators import knownfailureif
+  import pytest
 
-  @knownfailureif(True)
+  @pytest.mark.xfail
   def test_simple_fail():
       '''very simple example test that should fail'''
-      assert_equal(1+1,3)
+      assert 1 + 1 == 3
 
-Note that the first argument to the
-:func:`~matplotlib.testing.decorators.knownfailureif` decorator is a
-fail condition, which can be a value such as True, False, or
-'indeterminate', or may be a dynamically evaluated expression.
+Note that the first argument to the :func:`~pytest.mark.xfail` decorator is a
+fail condition, which can be a value such as True, False, or may be a
+dynamically evaluated expression. If a condition is supplied, then a reason
+must also be supplied with the ``reason='message'`` keyword argument.
 
 Creating a new module in matplotlib.tests
 -----------------------------------------
@@ -179,15 +226,10 @@ We try to keep the tests categorized by the primary module they are
 testing.  For example, the tests related to the ``mathtext.py`` module
 are in ``test_mathtext.py``.
 
-Let's say you've added a new module named ``whizbang.py`` and you want
-to add tests for it in ``matplotlib.tests.test_whizbang``.  To add
-this module to the list of default tests, append its name to
-``default_test_modules`` in :file:`lib/matplotlib/__init__.py`.
-
 Using Travis CI
 ---------------
 
-`Travis CI <http://travis-ci.org/>`_ is a hosted CI system "in the
+`Travis CI <https://travis-ci.org/>`_ is a hosted CI system "in the
 cloud".
 
 Travis is configured to receive notifications of new commits to GitHub
@@ -199,27 +241,28 @@ project.
 Travis CI is already enabled for the `main matplotlib GitHub
 repository <https://github.com/matplotlib/matplotlib/>`_ -- for
 example, see `its Travis page
-<http://travis-ci.org/#!/matplotlib/matplotlib>`_.
+<https://travis-ci.org/matplotlib/matplotlib>`_.
 
-If you want to enable Travis CI for your personal matplotlib GitHub
+If you want to enable Travis CI for your personal Matplotlib GitHub
 repo, simply enable the repo to use Travis CI in either the Travis CI
 UI or the GitHub UI (Admin | Service Hooks). For details, see `the
 Travis CI Getting Started page
-<http://about.travis-ci.org/docs/user/getting-started/>`_.  This
+<https://docs.travis-ci.com/user/getting-started/>`_.  This
 generally isn't necessary, since any pull request submitted against
-the main matplotlib repository will be tested.
+the main Matplotlib repository will be tested.
 
 Once this is configured, you can see the Travis CI results at
-http://travis-ci.org/#!/your_GitHub_user_name/matplotlib -- here's `an
-example <http://travis-ci.org/#!/msabramo/matplotlib>`_.
+https://travis-ci.org/your_GitHub_user_name/matplotlib -- here's `an
+example <https://travis-ci.org/msabramo/matplotlib>`_.
 
 
 Using tox
 ---------
 
-`Tox <http://tox.testrun.org/>`_ is a tool for running tests against
+`Tox <https://tox.readthedocs.io/en/latest/>`_ is a tool for running
+tests against
 multiple Python environments, including multiple versions of Python
-(e.g., 2.6, 2.7, 3.2, etc.) and even different Python implementations
+(e.g., 2.7, 3.4, 3.5) and even different Python implementations
 altogether (e.g., CPython, PyPy, Jython, etc.)
 
 Testing all versions of Python (2.6, 2.7, 3.*) requires
@@ -255,4 +298,4 @@ edit this file if you want to add new environments to test (e.g.,
 ``py33``) or if you want to tweak the dependencies or the way the
 tests are run. For more info on the ``tox.ini`` file, see the `Tox
 Configuration Specification
-<http://tox.testrun.org/latest/config.html>`_.
+<https://tox.readthedocs.io/en/latest/config.html>`_.

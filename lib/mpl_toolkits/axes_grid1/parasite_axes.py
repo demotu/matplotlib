@@ -1,42 +1,28 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+import functools
 
-import six
-
-import warnings
-
-import matplotlib
-rcParams = matplotlib.rcParams
-import matplotlib.artist as martist
-import matplotlib.transforms as mtransforms
-import matplotlib.collections as mcoll
-import matplotlib.legend as mlegend
-
+from matplotlib import (
+    artist as martist, collections as mcoll, transforms as mtransforms,
+    rcParams)
 from matplotlib.axes import subplot_class_factory
-from .mpl_axes import Axes
-
 from matplotlib.transforms import Bbox
+from .mpl_axes import Axes
 
 import numpy as np
 
-import matplotlib.cbook as cbook
-is_string_like = cbook.is_string_like
 
-
-class ParasiteAxesBase:
+class ParasiteAxesBase(object):
 
     def get_images_artists(self):
-        artists = set([a for a in self.get_children() if a.get_visible()])
-        images = set([a for a in self.images if a.get_visible()])
+        artists = {a for a in self.get_children() if a.get_visible()}
+        images = {a for a in self.images if a.get_visible()}
 
         return list(images), list(artists - images)
 
-    def __init__(self, parent_axes, **kargs):
-
+    def __init__(self, parent_axes, **kwargs):
         self._parent_axes = parent_axes
-        kargs.update(dict(frameon=False))
-        self._get_base_axes_attr("__init__")(self, parent_axes.figure,
-                                        parent_axes._position, **kargs)
+        kwargs["frameon"] = False
+        self._get_base_axes_attr("__init__")(
+            self, parent_axes.figure, parent_axes._position, **kwargs)
 
     def cla(self):
         self._get_base_axes_attr("cla")(self)
@@ -54,34 +40,23 @@ class ParasiteAxesBase:
             self.yaxis.set_zorder(2.5)
 
 
-_parasite_axes_classes = {}
+@functools.lru_cache(None)
 def parasite_axes_class_factory(axes_class=None):
     if axes_class is None:
         axes_class = Axes
 
-    new_class = _parasite_axes_classes.get(axes_class)
-    if new_class is None:
-        def _get_base_axes_attr(self, attrname):
-            return getattr(axes_class, attrname)
+    def _get_base_axes_attr(self, attrname):
+        return getattr(axes_class, attrname)
 
-        new_class = type(str("%sParasite" % (axes_class.__name__)),
-                         (ParasiteAxesBase, axes_class),
-                         {'_get_base_axes_attr': _get_base_axes_attr})
-        _parasite_axes_classes[axes_class] = new_class
+    return type("%sParasite" % axes_class.__name__,
+                (ParasiteAxesBase, axes_class),
+                {'_get_base_axes_attr': _get_base_axes_attr})
 
-    return new_class
 
 ParasiteAxes = parasite_axes_class_factory()
 
-# #class ParasiteAxes(ParasiteAxesBase, Axes):
 
-#     @classmethod
-#     def _get_base_axes_attr(cls, attrname):
-#         return getattr(Axes, attrname)
-
-
-
-class ParasiteAxesAuxTransBase:
+class ParasiteAxesAuxTransBase(object):
     def __init__(self, parent_axes, aux_transform, viewlim_mode=None,
                  **kwargs):
 
@@ -203,8 +178,7 @@ class ParasiteAxesAuxTransBase:
         #ParasiteAxes.apply_aspect()
 
 
-
-_parasite_axes_auxtrans_classes = {}
+@functools.lru_cache(None)
 def parasite_axes_auxtrans_class_factory(axes_class=None):
     if axes_class is None:
         parasite_axes_class = ParasiteAxes
@@ -212,21 +186,14 @@ def parasite_axes_auxtrans_class_factory(axes_class=None):
         parasite_axes_class = parasite_axes_class_factory(axes_class)
     else:
         parasite_axes_class = axes_class
-
-    new_class = _parasite_axes_auxtrans_classes.get(parasite_axes_class)
-    if new_class is None:
-        new_class = type(str("%sParasiteAuxTrans" % (parasite_axes_class.__name__)),
-                         (ParasiteAxesAuxTransBase, parasite_axes_class),
-                         {'_parasite_axes_class': parasite_axes_class,
-                         'name': 'parasite_axes'})
-        _parasite_axes_auxtrans_classes[parasite_axes_class] = new_class
-
-    return new_class
+    return type("%sParasiteAuxTrans" % parasite_axes_class.__name__,
+                (ParasiteAxesAuxTransBase, parasite_axes_class),
+                {'_parasite_axes_class': parasite_axes_class,
+                 'name': 'parasite_axes'})
 
 
-ParasiteAxesAuxTrans = parasite_axes_auxtrans_class_factory(axes_class=ParasiteAxes)
-
-
+ParasiteAxesAuxTrans = parasite_axes_auxtrans_class_factory(
+    axes_class=ParasiteAxes)
 
 
 def _get_handles(ax):
@@ -242,12 +209,10 @@ def _get_handles(ax):
     return handles
 
 
-class HostAxesBase:
+class HostAxesBase(object):
     def __init__(self, *args, **kwargs):
-
         self.parasites = []
         self._get_base_axes_attr("__init__")(self, *args, **kwargs)
-
 
     def get_aux_axes(self, tr, viewlim_mode="equal", axes_class=None):
         parasite_axes_class = parasite_axes_auxtrans_class_factory(axes_class)
@@ -255,10 +220,11 @@ class HostAxesBase:
         # note that ax2.transData == tr + ax1.transData
         # Anthing you draw in ax2 will match the ticks and grids of ax1.
         self.parasites.append(ax2)
+        ax2._remove_method = self.parasites.remove
         return ax2
 
-
     def _get_legend_handles(self, legend_handler_map=None):
+        # don't use this!
         Axes_get_legend_handles = self._get_base_axes_attr("_get_legend_handles")
         all_handles = list(Axes_get_legend_handles(self, legend_handler_map))
 
@@ -266,7 +232,6 @@ class HostAxesBase:
             all_handles.extend(ax._get_legend_handles(legend_handler_map))
 
         return all_handles
-
 
     def draw(self, renderer):
 
@@ -296,22 +261,13 @@ class HostAxesBase:
         self.artists = orig_artists
         self.images = orig_images
 
-
     def cla(self):
-
         for ax in self.parasites:
             ax.cla()
-
         self._get_base_axes_attr("cla")(self)
-        #super(HostAxes, self).cla()
-
 
     def twinx(self, axes_class=None):
         """
-        call signature::
-
-          ax2 = ax.twinx()
-
         create a twin of Axes for generating a plot with a sharex
         x-axis but independent y axis.  The y-axis of self will have
         ticks on left and the returned axes will have ticks on the
@@ -325,27 +281,22 @@ class HostAxesBase:
 
         ax2 = parasite_axes_class(self, sharex=self, frameon=False)
         self.parasites.append(ax2)
+        ax2._remove_method = self._remove_twinx
 
-        # for normal axes
-
-        self.axis["right"].toggle(all=False)
-        self.axis["right"].line.set_visible(True)
+        self.axis["right"].set_visible(False)
 
         ax2.axis["right"].set_visible(True)
-        ax2.axis["left","top", "bottom"].toggle(all=False)
-        ax2.axis["left","top", "bottom"].line.set_visible(False)
-
-        ax2.axis["right"].toggle(all=True)
-        ax2.axis["right"].line.set_visible(False)
+        ax2.axis["left", "top", "bottom"].set_visible(False)
 
         return ax2
 
+    def _remove_twinx(self, ax):
+        self.parasites.remove(ax)
+        self.axis["right"].set_visible(True)
+        self.axis["right"].toggle(ticklabels=False, label=False)
+
     def twiny(self, axes_class=None):
         """
-        call signature::
-
-          ax2 = ax.twiny()
-
         create a twin of Axes for generating a plot with a shared
         y-axis but independent x axis.  The x-axis of self will have
         ticks on bottom and the returned axes will have ticks on the
@@ -359,26 +310,22 @@ class HostAxesBase:
 
         ax2 = parasite_axes_class(self, sharey=self, frameon=False)
         self.parasites.append(ax2)
+        ax2._remove_method = self._remove_twiny
 
-        self.axis["top"].toggle(all=False)
-        self.axis["top"].line.set_visible(True)
+        self.axis["top"].set_visible(False)
 
         ax2.axis["top"].set_visible(True)
-        ax2.axis["left","right", "bottom"].toggle(all=False)
-        ax2.axis["left","right", "bottom"].line.set_visible(False)
-
-        ax2.axis["top"].toggle(all=True)
-        ax2.axis["top"].line.set_visible(False)
+        ax2.axis["left", "right", "bottom"].set_visible(False)
 
         return ax2
 
+    def _remove_twiny(self, ax):
+        self.parasites.remove(ax)
+        self.axis["top"].set_visible(True)
+        self.axis["top"].toggle(ticklabels=False, label=False)
 
     def twin(self, aux_trans=None, axes_class=None):
         """
-        call signature::
-
-          ax2 = ax.twin()
-
         create a twin of Axes for generating a plot with a sharex
         x-axis but independent y axis.  The y-axis of self will have
         ticks on left and the returned axes will have ticks on the
@@ -388,60 +335,34 @@ class HostAxesBase:
         if axes_class is None:
             axes_class = self._get_base_axes()
 
-        parasite_axes_auxtrans_class = parasite_axes_auxtrans_class_factory(axes_class)
+        parasite_axes_auxtrans_class = \
+            parasite_axes_auxtrans_class_factory(axes_class)
 
         if aux_trans is None:
-            ax2 = parasite_axes_auxtrans_class(self, mtransforms.IdentityTransform(),
-                                               viewlim_mode="equal",
-                                               )
+            ax2 = parasite_axes_auxtrans_class(
+                self, mtransforms.IdentityTransform(), viewlim_mode="equal")
         else:
-            ax2 = parasite_axes_auxtrans_class(self, aux_trans,
-                                               viewlim_mode="transform",
-                                               )
+            ax2 = parasite_axes_auxtrans_class(
+                self, aux_trans, viewlim_mode="transform")
         self.parasites.append(ax2)
+        ax2._remove_method = self.parasites.remove
 
+        self.axis["top", "right"].set_visible(False)
 
-        # for normal axes
-        #self.yaxis.tick_left()
-        #self.xaxis.tick_bottom()
-        #ax2.yaxis.tick_right()
-        #ax2.xaxis.set_visible(True)
-        #ax2.yaxis.set_visible(True)
+        ax2.axis["top", "right"].set_visible(True)
+        ax2.axis["left", "bottom"].set_visible(False)
 
-        #ax2.yaxis.set_label_position('right')
-        ##ax2.xaxis.tick_top()
-        #ax2.xaxis.set_label_position('top')
-
-
-        self.axis["top","right"].toggle(all=False)
-        self.axis["top","right"].line.set_visible(False)
-        #self.axis["left","bottom"].toggle(label=True)
-
-        ax2.axis["top","right"].set_visible(True)
-
-        ax2.axis["bottom","left"].toggle(all=False)
-        ax2.axis["bottom","left"].line.set_visible(False)
-
-        ax2.axis["top","right"].toggle(all=True)
-        ax2.axis["top","right"].line.set_visible(True)
-
-
-        # # for axisline axes
-        # self._axislines["right"].set_visible(False)
-        # self._axislines["top"].set_visible(False)
-        # ax2._axislines["left"].set_visible(False)
-        # ax2._axislines["bottom"].set_visible(False)
-
-        # ax2._axislines["right"].set_visible(True)
-        # ax2._axislines["top"].set_visible(True)
-        # ax2._axislines["right"].major_ticklabels.set_visible(True)
-        # ax2._axislines["top"].major_ticklabels.set_visible(True)
+        def _remove_method(h):
+            self.parasites.remove(h)
+            self.axis["top", "right"].set_visible(True)
+            self.axis["top", "right"].toggle(ticklabels=False, label=False)
+        ax2._remove_method = _remove_method
 
         return ax2
 
     def get_tightbbox(self, renderer, call_axes_locator=True):
 
-        bbs = [ax.get_tightbbox(renderer, call_axes_locator) \
+        bbs = [ax.get_tightbbox(renderer, call_axes_locator)
                for ax in self.parasites]
         get_tightbbox = self._get_base_axes_attr("get_tightbbox")
         bbs.append(get_tightbbox(self, renderer, call_axes_locator))
@@ -451,54 +372,73 @@ class HostAxesBase:
         return _bbox
 
 
-
-_host_axes_classes = {}
+@functools.lru_cache(None)
 def host_axes_class_factory(axes_class=None):
     if axes_class is None:
         axes_class = Axes
 
-    new_class = _host_axes_classes.get(axes_class)
-    if new_class is None:
-        def _get_base_axes(self):
-            return axes_class
+    def _get_base_axes(self):
+        return axes_class
 
-        def _get_base_axes_attr(self, attrname):
-            return getattr(axes_class, attrname)
+    def _get_base_axes_attr(self, attrname):
+        return getattr(axes_class, attrname)
 
-        new_class = type(str("%sHostAxes" % (axes_class.__name__)),
-                         (HostAxesBase, axes_class),
-                         {'_get_base_axes_attr': _get_base_axes_attr,
-                          '_get_base_axes': _get_base_axes})
+    return type("%sHostAxes" % axes_class.__name__,
+                (HostAxesBase, axes_class),
+                {'_get_base_axes_attr': _get_base_axes_attr,
+                 '_get_base_axes': _get_base_axes})
 
-        _host_axes_classes[axes_class] = new_class
-
-    return new_class
 
 def host_subplot_class_factory(axes_class):
     host_axes_class = host_axes_class_factory(axes_class=axes_class)
     subplot_host_class = subplot_class_factory(host_axes_class)
     return subplot_host_class
 
+
 HostAxes = host_axes_class_factory(axes_class=Axes)
 SubplotHost = subplot_class_factory(HostAxes)
 
 
-def host_axes(*args, **kwargs):
+def host_axes(*args, axes_class=None, figure=None, **kwargs):
+    """
+    Create axes that can act as a hosts to parasitic axes.
+
+    Parameters
+    ----------
+    figure : `matplotlib.figure.Figure`
+        Figure to which the axes will be added. Defaults to the current figure
+        `pyplot.gcf()`.
+
+    *args, **kwargs :
+        Will be passed on to the underlying ``Axes`` object creation.
+    """
     import matplotlib.pyplot as plt
-    axes_class = kwargs.pop("axes_class", None)
     host_axes_class = host_axes_class_factory(axes_class)
-    fig = plt.gcf()
-    ax = host_axes_class(fig, *args, **kwargs)
-    fig.add_axes(ax)
+    if figure is None:
+        figure = plt.gcf()
+    ax = host_axes_class(figure, *args, **kwargs)
+    figure.add_axes(ax)
     plt.draw_if_interactive()
     return ax
 
-def host_subplot(*args, **kwargs):
+def host_subplot(*args, axes_class=None, figure=None, **kwargs):
+    """
+    Create a subplot that can act as a host to parasitic axes.
+
+    Parameters
+    ----------
+    figure : `matplotlib.figure.Figure`
+        Figure to which the subplot will be added. Defaults to the current
+        figure `pyplot.gcf()`.
+
+    *args, **kwargs :
+        Will be passed on to the underlying ``Axes`` object creation.
+    """
     import matplotlib.pyplot as plt
-    axes_class = kwargs.pop("axes_class", None)
     host_subplot_class = host_subplot_class_factory(axes_class)
-    fig = plt.gcf()
-    ax = host_subplot_class(fig, *args, **kwargs)
-    fig.add_subplot(ax)
+    if figure is None:
+        figure = plt.gcf()
+    ax = host_subplot_class(figure, *args, **kwargs)
+    figure.add_subplot(ax)
     plt.draw_if_interactive()
     return ax

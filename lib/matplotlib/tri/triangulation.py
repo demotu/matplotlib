@@ -1,11 +1,7 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
+import numpy as np
 
 import matplotlib._tri as _tri
 import matplotlib._qhull as _qhull
-import numpy as np
 
 
 class Triangulation(object):
@@ -41,7 +37,7 @@ class Triangulation(object):
     def __init__(self, x, y, triangles=None, mask=None):
         self.x = np.asarray(x, dtype=np.float64)
         self.y = np.asarray(y, dtype=np.float64)
-        if self.x.shape != self.y.shape or len(self.x.shape) != 1:
+        if self.x.shape != self.y.shape or self.x.ndim != 1:
             raise ValueError("x and y must be equal-length 1-D arrays")
 
         self.mask = None
@@ -57,7 +53,7 @@ class Triangulation(object):
         else:
             # Triangulation specified. Copy, since we may correct triangle
             # orientation.
-            self.triangles = np.array(triangles, dtype=np.int32)
+            self.triangles = np.array(triangles, dtype=np.int32, order='C')
             if self.triangles.ndim != 2 or self.triangles.shape[1] != 3:
                 raise ValueError('triangles must be a (?,3) array')
             if self.triangles.max() >= len(self.x):
@@ -66,9 +62,8 @@ class Triangulation(object):
                 raise ValueError('triangles min element is out of bounds')
 
         if mask is not None:
-            self.mask = np.asarray(mask, dtype=np.bool)
-            if (len(self.mask.shape) != 1 or
-                    self.mask.shape[0] != self.triangles.shape[0]):
+            self.mask = np.asarray(mask, dtype=bool)
+            if self.mask.shape != (self.triangles.shape[0],):
                 raise ValueError('mask array must have same length as '
                                  'triangles array')
 
@@ -107,7 +102,7 @@ class Triangulation(object):
         if self._cpp_triangulation is None:
             self._cpp_triangulation = _tri.Triangulation(
                 self.x, self.y, self.triangles, self.mask, self._edges,
-                self._neighbors)
+                self._neighbors, not self.is_delaunay)
         return self._cpp_triangulation
 
     def get_masked_triangles(self):
@@ -142,7 +137,7 @@ class Triangulation(object):
             # Check triangles in kwargs then args.
             triangles = kwargs.pop('triangles', None)
             from_args = False
-            if triangles is None and len(args) > 0:
+            if triangles is None and args:
                 triangles = args[0]
                 from_args = True
 
@@ -201,9 +196,8 @@ class Triangulation(object):
         if mask is None:
             self.mask = None
         else:
-            self.mask = np.asarray(mask, dtype=np.bool)
-            if (len(self.mask.shape) != 1 or
-                    self.mask.shape[0] != self.triangles.shape[0]):
+            self.mask = np.asarray(mask, dtype=bool)
+            if self.mask.shape != (self.triangles.shape[0],):
                 raise ValueError('mask array must have same length as '
                                  'triangles array')
 

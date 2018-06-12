@@ -9,10 +9,10 @@ Troubleshooting
 
 .. _matplotlib-version:
 
-Obtaining matplotlib version
+Obtaining Matplotlib version
 ============================
 
-To find out your matplotlib version number, import it and print the
+To find out your Matplotlib version number, import it and print the
 ``__version__`` attribute::
 
     >>> import matplotlib
@@ -25,7 +25,7 @@ To find out your matplotlib version number, import it and print the
 :file:`matplotlib` install location
 ===================================
 
-You can find what directory matplotlib is installed in by importing it
+You can find what directory Matplotlib is installed in by importing it
 and printing the ``__file__`` attribute::
 
     >>> import matplotlib
@@ -34,98 +34,129 @@ and printing the ``__file__`` attribute::
 
 .. _locating-matplotlib-config-dir:
 
-:file:`.matplotlib` directory location
-======================================
+:file:`matplotlib` configuration and cache directory locations
+==============================================================
 
-Each user has a matplotlib configuration directory which may contain a
+Each user has a Matplotlib configuration directory which may contain a
 :ref:`matplotlibrc <customizing-with-matplotlibrc-files>` file. To
-locate your :file:`.matplotlib/` directory, use
+locate your :file:`matplotlib/` configuration directory, use
 :func:`matplotlib.get_configdir`::
 
     >>> import matplotlib as mpl
     >>> mpl.get_configdir()
-    '/home/darren/.matplotlib'
+    '/home/darren/.config/matplotlib'
 
 On unix-like systems, this directory is generally located in your
-:envvar:`HOME` directory.  On windows, it is in your documents and
-settings directory by default::
+:envvar:`HOME` directory under the :file:`.config/` directory.
 
-    >>> import matplotlib
+In addition, users have a cache directory. On unix-like systems, this is
+separate from the configuration directory by default. To locate your
+:file:`.cache/` directory, use :func:`matplotlib.get_cachedir`::
+
+    >>> import matplotlib as mpl
+    >>> mpl.get_cachedir()
+    '/home/darren/.cache/matplotlib'
+
+On windows, both the config directory and the cache directory are
+the same and are in your :file:`Documents and Settings` or :file:`Users`
+directory by default::
+
+    >>> import matplotlib as mpl
     >>> mpl.get_configdir()
+    'C:\\Documents and Settings\\jdhunter\\.matplotlib'
+    >>> mpl.get_cachedir()
     'C:\\Documents and Settings\\jdhunter\\.matplotlib'
 
 If you would like to use a different configuration directory, you can
 do so by specifying the location in your :envvar:`MPLCONFIGDIR`
 environment variable -- see
-:ref:`setting-linux-osx-environment-variables`.
-
+:ref:`setting-linux-osx-environment-variables`.  Note that
+:envvar:`MPLCONFIGDIR` sets the location of both the configuration
+directory and the cache directory.
 
 .. _reporting-problems:
 
 Getting help
 ============
 
-There are a number of good resources for getting help with matplotlib.
+There are a number of good resources for getting help with Matplotlib.
 There is a good chance your question has already been asked:
 
-  - The `mailing list archive <http://matplotlib.1069221.n5.nabble.com/>`_.
+- The `mailing list archive <http://matplotlib.1069221.n5.nabble.com/>`_.
 
-  - `Github issues <https://github.com/matplotlib/matplotlib/issues>`_.
+- `Github issues <https://github.com/matplotlib/matplotlib/issues>`_.
 
-  - Stackoverflow questions tagged `matplotlib
-    <http://stackoverflow.com/questions/tagged/matplotlib>`_.
+- Stackoverflow questions tagged `matplotlib
+  <http://stackoverflow.com/questions/tagged/matplotlib>`_.
 
-If you are unable to find an answer to your question through search,
-please provide the following information in your e-mail to the
-`mailing list
-<http://lists.sourceforge.net/mailman/listinfo/matplotlib-users>`_:
+If you are unable to find an answer to your question through search, please
+provide the following information in your e-mail to the `mailing list
+<https://mail.python.org/mailman/listinfo/matplotlib-users>`_:
 
-  * your operating system; (Linux/UNIX users: post the output of ``uname -a``)
+* Your operating system (Linux/UNIX users: post the output of ``uname -a``).
 
-  * matplotlib version::
+* Matplotlib version::
 
-        python -c `import matplotlib; print matplotlib.__version__`
+     python -c "import matplotlib; print matplotlib.__version__"
 
-  * where you obtained matplotlib (e.g., your Linux distribution's
-    packages or the matplotlib Sourceforge site, or
-    Anaconda_ or
-    `Enthought Canopy <https://www.enthought.com/products/canopy/>`_).
+* Where you obtained Matplotlib (e.g., your Linux distribution's packages,
+  Github, PyPi, or `Anaconda <https://www.continuum.io/downloads>`_ or
+  `Enthought Canopy <https://www.enthought.com/products/canopy/>`_).
 
-.. _Anaconda: https://store.continuum.io/cshop/anaconda/
+* Any customizations to your ``matplotlibrc`` file (see
+  :doc:`/tutorials/introductory/customizing`).
+
+* If the problem is reproducible, please try to provide a *minimal*, standalone
+  Python script that demonstrates the problem.  This is *the* critical step.
+  If you can't post a piece of code that we can run and reproduce your error,
+  the chances of getting help are significantly diminished.  Very often, the
+  mere act of trying to minimize your code to the smallest bit that produces
+  the error will help you find a bug in *your* code that is causing the
+  problem.
+
+* You can get helpful debugging output from Matlotlib by using the `logging`
+  library in your code and posting the verbose output to the lists.  For a
+  command-line version of this, try::
+
+     python -c "from logging import *; basicConfig(level=DEBUG); from pylab import *; plot(); show()"
 
 
-  * any customizations to your ``matplotlibrc`` file (see
-    :ref:`customizing-matplotlib`).
+  If you want to put the debugging hooks in your own code, then the
+  most simple way to do so is to insert the following *before* any calls
+  to ``import matplotlib``::
 
-  * if the problem is reproducible, please try to provide a *minimal*,
-    standalone Python script that demonstrates the problem.  This is
-    *the* critical step.  If you can't post a piece of code that we
-    can run and reproduce your error, the chances of getting help are
-    significantly diminished.  Very often, the mere act of trying to
-    minimize your code to the smallest bit that produces the error
-    will help you find a bug in *your* code that is causing the
-    problem.
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
 
-  * you can get very helpful debugging output from matlotlib by
-    running your script with a ``verbose-helpful`` or
-    ``--verbose-debug`` flags and posting the verbose output the
-    lists::
+    import matplotlib.pyplot as plt
 
-        > python simple_plot.py --verbose-helpful > output.txt
+  Note that if you want to use `logging` in your own code, but do not
+  want verbose Matplotlib output, you can set the logging level
+  for Matplotlib independently::
 
-If you compiled matplotlib yourself, please also provide
+    import logging
+    # set DEBUG for everything
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger('matplotlib')
+    # set WARNING for Matplotlib
+    logger.setLevel(logging.WARNING)
 
-  * any changes you have made to ``setup.py`` or ``setupext.py``
-  * the output of::
+  The `logging` module is very flexible, and can be a valuable tool in chasing
+  down errors.
 
-      rm -rf build
-      python setup.py build
+If you compiled Matplotlib yourself, please also provide:
 
-    The beginning of the build output contains lots of details about your
-    platform that are useful for the matplotlib developers to diagnose
-    your problem.
+* any changes you have made to ``setup.py`` or ``setupext.py``.
+* the output of::
 
-  * your compiler version -- eg, ``gcc --version``
+     rm -rf build
+     python setup.py build
+
+  The beginning of the build output contains lots of details about your
+  platform that are useful for the Matplotlib developers to diagnose your
+  problem.
+
+* your compiler version -- e.g., ``gcc --version``.
 
 Including this information in your first e-mail to the mailing list
 will save a lot of time.
@@ -136,27 +167,25 @@ tracker only periodically.  If your problem has been determined to be
 a bug and can not be quickly solved, you may be asked to file a bug in
 the tracker so the issue doesn't get lost.
 
-
 .. _git-trouble:
 
 Problems with recent git versions
 =================================
 
-First make sure you have a clean build and install (see
-:ref:`clean-install`), get the latest git update, install it and run a
-simple test script in debug mode::
+First make sure you have a clean build and install (see :ref:`clean-install`),
+get the latest git update, install it and run a simple test script in debug
+mode::
 
-    rm -rf build
     rm -rf /path/to/site-packages/matplotlib*
+    git clean -xdf
     git pull
-    python setup.py install > build.out
+    python -mpip install -v . > build.out
     python examples/pylab_examples/simple_plot.py --verbose-debug > run.out
 
-and post :file:`build.out` and :file:`run.out` to the
-`matplotlib-devel
-<http://lists.sourceforge.net/mailman/listinfo/matplotlib-devel>`_
+and post :file:`build.out` and :file:`run.out` to the `matplotlib-devel
+<https://mail.python.org/mailman/listinfo/matplotlib-devel>`_
 mailing list (please do not post git problems to the `users list
-<http://lists.sourceforge.net/mailman/listinfo/matplotlib-users>`_).
+<https://mail.python.org/mailman/listinfo/matplotlib-users>`_).
 
 Of course, you will want to clearly describe your problem, what you
 are expecting and what you are getting, but often a clean build and

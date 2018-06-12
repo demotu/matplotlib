@@ -6,7 +6,7 @@ Licenses
 Matplotlib only uses BSD compatible code.  If you bring in code from
 another project make sure it has a PSF, BSD, MIT or compatible license
 (see the Open Source Initiative `licenses page
-<http://www.opensource.org/licenses>`_ for details on individual
+<https://opensource.org/licenses>`_ for details on individual
 licenses).  If it doesn't, you may consider contacting the author and
 asking them to relicense it.  GPL and LGPL code are not acceptable in
 the main code base, though we are considering an alternative way of
@@ -14,7 +14,7 @@ distributing L/GPL code through an separate channel, possibly a
 toolkit.  If you include code, make sure you include a copy of that
 code's license in the license directory if the code's license requires
 you to distribute the license with it.  Non-BSD compatible licenses
-are acceptable in matplotlib toolkits (eg basemap), but make sure you
+are acceptable in matplotlib toolkits (e.g., basemap), but make sure you
 clearly state the licenses you are using.
 
 Why BSD compatible?
@@ -28,7 +28,7 @@ most widely used license is the GPL, which in addition to granting you
 full rights to the source code including redistribution, carries with
 it an extra obligation. If you use GPL code in your own code, or link
 with it, your product must be released under a GPL compatible
-license. I.e., you are required to give the source code to other
+license. i.e., you are required to give the source code to other
 people and give them the right to redistribute it as well. Many of the
 most famous and widely used open source projects are released under
 the GPL, including linux, gcc, emacs and sage.
@@ -57,7 +57,7 @@ compatible).  Also, we wanted to attract as many users and developers
 as possible, and many software companies will not use GPL code in
 software they plan to distribute, even those that are highly committed
 to open source development, such as `enthought
-<http://enthought.com>`_, out of legitimate concern that use of the
+<https://www.enthought.com>`_, out of legitimate concern that use of the
 GPL will "infect" their code base by its viral nature. In effect, they
 want to retain the right to release some proprietary code. Companies
 and institutions who use matplotlib often make significant

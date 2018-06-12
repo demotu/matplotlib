@@ -19,27 +19,19 @@ Copyright : 2004 John Gill and John Hunter
 License   : matplotlib license
 
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-from six.moves import xrange
-
 import warnings
 
-from . import artist
+from . import artist, cbook, docstring
 from .artist import Artist, allow_rasterization
 from .patches import Rectangle
-from .cbook import is_string_like
-from matplotlib import docstring
 from .text import Text
 from .transforms import Bbox
+from .path import Path
 
 
 class Cell(Rectangle):
     """
-    A cell is a Rectangle with some associated text.
-
+    A cell is a  `.Rectangle` with some associated text.
     """
     PAD = 0.1  # padding between text and rectangle
 
@@ -67,20 +59,22 @@ class Cell(Rectangle):
     def set_transform(self, trans):
         Rectangle.set_transform(self, trans)
         # the text does not get the transform!
+        self.stale = True
 
     def set_figure(self, fig):
         Rectangle.set_figure(self, fig)
         self._text.set_figure(fig)
 
     def get_text(self):
-        'Return the cell Text intance'
+        """Return the cell `.Text` instance."""
         return self._text
 
     def set_fontsize(self, size):
         self._text.set_fontsize(size)
+        self.stale = True
 
     def get_fontsize(self):
-        'Return the cell fontsize'
+        """Return the cell fontsize."""
         return self._text.get_fontsize()
 
     def auto_set_font_size(self, renderer):
@@ -104,6 +98,7 @@ class Cell(Rectangle):
         # position the text
         self._set_text_position(renderer)
         self._text.draw(renderer)
+        self.stale = False
 
     def _set_text_position(self, renderer):
         """ Set text up so it draws in the right place.
@@ -144,6 +139,66 @@ class Cell(Rectangle):
     def set_text_props(self, **kwargs):
         'update the text properties with kwargs'
         self._text.update(kwargs)
+        self.stale = True
+
+
+class CustomCell(Cell):
+    """
+    A subclass of Cell where the sides may be visibly toggled.
+    """
+
+    _edges = 'BRTL'
+    _edge_aliases = {'open':         '',
+                     'closed':       _edges,  # default
+                     'horizontal':   'BT',
+                     'vertical':     'RL'
+                     }
+
+    def __init__(self, *args, visible_edges, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.visible_edges = visible_edges
+
+    @property
+    def visible_edges(self):
+        return self._visible_edges
+
+    @visible_edges.setter
+    def visible_edges(self, value):
+        if value is None:
+            self._visible_edges = self._edges
+        elif value in self._edge_aliases:
+            self._visible_edges = self._edge_aliases[value]
+        else:
+            for edge in value:
+                if edge not in self._edges:
+                    raise ValueError('Invalid edge param {}, must only be one '
+                                     'of {} or string of {}'.format(
+                                         value,
+                                         ", ".join(self._edge_aliases),
+                                         ", ".join(self._edges)))
+            self._visible_edges = value
+        self.stale = True
+
+    def get_path(self):
+        """
+        Return a path where the edges specified by _visible_edges are drawn.
+        """
+        codes = [Path.MOVETO]
+
+        for edge in self._edges:
+            if edge in self._visible_edges:
+                codes.append(Path.LINETO)
+            else:
+                codes.append(Path.MOVETO)
+
+        if Path.MOVETO not in codes[1:]:  # All sides are visible
+            codes[-1] = Path.CLOSEPOLY
+
+        return Path(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]],
+            codes,
+            readonly=True
+            )
 
 
 class Table(Artist):
@@ -154,7 +209,7 @@ class Table(Artist):
 
     Each entry in the table can be either text or patches.
 
-    Column widths and row heights for the table can be specifified.
+    Column widths and row heights for the table can be specified.
 
     Return value is a sequence of text, line and patch instances that make
     up the table
@@ -186,13 +241,13 @@ class Table(Artist):
 
         Artist.__init__(self)
 
-        if is_string_like(loc) and loc not in self.codes:
-            warnings.warn('Unrecognized location %s. Falling back on '
-                          'bottom; valid locations are\n%s\t' %
-                          (loc, '\n\t'.join(six.iterkeys(self.codes))))
-            loc = 'bottom'
-        if is_string_like(loc):
-            loc = self.codes.get(loc, 1)
+        if isinstance(loc, str):
+            if loc not in self.codes:
+                warnings.warn('Unrecognized location %s. Falling back on '
+                              'bottom; valid locations are\n%s\t' %
+                              (loc, '\n\t'.join(self.codes)))
+                loc = 'bottom'
+            loc = self.codes[loc]
         self.set_figure(ax.figure)
         self._axes = ax
         self._loc = loc
@@ -203,6 +258,7 @@ class Table(Artist):
 
         self._texts = []
         self._cells = {}
+        self._edges = None
         self._autoRows = []
         self._autoColumns = []
         self._autoFontsize = True
@@ -210,18 +266,61 @@ class Table(Artist):
 
         self.set_clip_on(False)
 
-        self._cachedRenderer = None
-
     def add_cell(self, row, col, *args, **kwargs):
-        """ Add a cell to the table. """
-        xy = (0, 0)
+        """
+        Add a cell to the table.
 
-        cell = Cell(xy, *args, **kwargs)
+        Parameters
+        ----------
+        row : int
+            Row index.
+        col : int
+            Column index.
+
+        Returns
+        -------
+        `CustomCell`: Automatically created cell
+
+        """
+        xy = (0, 0)
+        cell = CustomCell(xy, visible_edges=self.edges, *args, **kwargs)
+        self[row, col] = cell
+        return cell
+
+    def __setitem__(self, position, cell):
+        """
+        Set a custom cell in a given position.
+        """
+        if not isinstance(cell, CustomCell):
+            raise TypeError('Table only accepts CustomCell')
+        try:
+            row, col = position[0], position[1]
+        except Exception:
+            raise KeyError('Only tuples length 2 are accepted as coordinates')
         cell.set_figure(self.figure)
         cell.set_transform(self.get_transform())
-
         cell.set_clip_on(False)
-        self._cells[(row, col)] = cell
+        self._cells[row, col] = cell
+        self.stale = True
+
+    def __getitem__(self, position):
+        """
+        Retrieve a custom cell from a given position.
+        """
+        try:
+            row, col = position[0], position[1]
+        except Exception:
+            raise KeyError('Only tuples length 2 are accepted as coordinates')
+        return self._cells[row, col]
+
+    @property
+    def edges(self):
+        return self._edges
+
+    @edges.setter
+    def edges(self, value):
+        self._edges = value
+        self.stale = True
 
     def _approx_text_height(self):
         return (self.FONTSIZE / 72.0 * self.figure.dpi /
@@ -232,32 +331,28 @@ class Table(Artist):
         # Need a renderer to do hit tests on mouseevent; assume the last one
         # will do
         if renderer is None:
-            renderer = self._cachedRenderer
+            renderer = self.figure._cachedRenderer
         if renderer is None:
             raise RuntimeError('No renderer defined')
-        self._cachedRenderer = renderer
 
         if not self.get_visible():
             return
         renderer.open_group('table')
         self._update_positions(renderer)
 
-        keys = list(six.iterkeys(self._cells))
-        keys.sort()
-        for key in keys:
+        for key in sorted(self._cells):
             self._cells[key].draw(renderer)
-        #for c in self._cells.itervalues():
-        #    c.draw(renderer)
+
         renderer.close_group('table')
+        self.stale = False
 
     def _get_grid_bbox(self, renderer):
         """Get a bbox, in axes co-ordinates for the cells.
 
         Only include those in the range (0,0) to (maxRow, maxCol)"""
-        boxes = [self._cells[pos].get_window_extent(renderer)
-                 for pos in six.iterkeys(self._cells)
-                 if pos[0] >= 0 and pos[1] >= 0]
-
+        boxes = [cell.get_window_extent(renderer)
+                 for (row, col), cell in self._cells.items()
+                 if row >= 0 and col >= 0]
         bbox = Bbox.union(boxes)
         return bbox.inverse_transformed(self.get_transform())
 
@@ -266,30 +361,30 @@ class Table(Artist):
 
         Returns T/F, {}
         """
-        if six.callable(self._contains):
+        if callable(self._contains):
             return self._contains(self, mouseevent)
 
         # TODO: Return index of the cell containing the cursor so that the user
         # doesn't have to bind to each one individually.
-        if self._cachedRenderer is not None:
-            boxes = [self._cells[pos].get_window_extent(self._cachedRenderer)
-                 for pos in six.iterkeys(self._cells)
-                 if pos[0] >= 0 and pos[1] >= 0]
+        renderer = self.figure._cachedRenderer
+        if renderer is not None:
+            boxes = [cell.get_window_extent(renderer)
+                     for (row, col), cell in self._cells.items()
+                     if row >= 0 and col >= 0]
             bbox = Bbox.union(boxes)
             return bbox.contains(mouseevent.x, mouseevent.y), {}
         else:
             return False, {}
 
     def get_children(self):
-        'Return the Artists contained by the table'
-        return list(six.itervalues(self._cells))
-    get_child_artists = get_children  # backward compatibility
+        """Return the Artists contained by the table."""
+        return list(self._cells.values())
+    get_child_artists = cbook.deprecated("3.0")(get_children)
 
     def get_window_extent(self, renderer):
-        'Return the bounding box of the table in window coords'
+        """Return the bounding box of the table in window coords."""
         boxes = [cell.get_window_extent(renderer)
-                 for cell in six.itervalues(self._cells)]
-
+                 for cell in self._cells.values()]
         return Bbox.union(boxes)
 
     def _do_cell_alignment(self):
@@ -300,7 +395,7 @@ class Table(Artist):
         # Calculate row/column widths
         widths = {}
         heights = {}
-        for (row, col), cell in six.iteritems(self._cells):
+        for (row, col), cell in self._cells.items():
             height = heights.setdefault(row, 0.0)
             heights[row] = max(height, cell.get_height())
             width = widths.setdefault(col, 0.0)
@@ -309,33 +404,56 @@ class Table(Artist):
         # work out left position for each column
         xpos = 0
         lefts = {}
-        cols = list(six.iterkeys(widths))
-        cols.sort()
-        for col in cols:
+        for col in sorted(widths):
             lefts[col] = xpos
             xpos += widths[col]
 
         ypos = 0
         bottoms = {}
-        rows = list(six.iterkeys(heights))
-        rows.sort()
-        rows.reverse()
-        for row in rows:
+        for row in sorted(heights, reverse=True):
             bottoms[row] = ypos
             ypos += heights[row]
 
         # set cell positions
-        for (row, col), cell in six.iteritems(self._cells):
+        for (row, col), cell in self._cells.items():
             cell.set_x(lefts[col])
             cell.set_y(bottoms[row])
 
     def auto_set_column_width(self, col):
+        """ Given column indexs in either List, Tuple or int. Will be able to
+        automatically set the columns into optimal sizes.
 
-        self._autoColumns.append(col)
+        Here is the example of the input, which triger automatic adjustment on
+        columns to optimal size by given index numbers.
+        -1: the row labling
+        0: the 1st column
+        1: the 2nd column
+
+        Args:
+            col(List): list of indexs
+            >>>table.auto_set_column_width([-1,0,1])
+
+            col(Tuple): tuple of indexs
+            >>>table.auto_set_column_width((-1,0,1))
+
+            col(int): index integer
+            >>>table.auto_set_column_width(-1)
+            >>>table.auto_set_column_width(0)
+            >>>table.auto_set_column_width(1)
+        """
+        # check for col possibility on iteration
+        try:
+            iter(col)
+        except (TypeError, AttributeError):
+            self._autoColumns.append(col)
+        else:
+            for cell in col:
+                self._autoColumns.append(cell)
+
+        self.stale = True
 
     def _auto_set_column_width(self, col, renderer):
-        """ Automagically set width for column.
-        """
+        """Automatically set width for column."""
         cells = [key for key in self._cells if key[1] == col]
 
         # find max width
@@ -351,14 +469,15 @@ class Table(Artist):
     def auto_set_font_size(self, value=True):
         """ Automatically set font size. """
         self._autoFontsize = value
+        self.stale = True
 
     def _auto_set_font_size(self, renderer):
 
         if len(self._cells) == 0:
             return
-        fontsize = list(six.itervalues(self._cells))[0].get_fontsize()
+        fontsize = next(iter(self._cells.values())).get_fontsize()
         cells = []
-        for key, cell in six.iteritems(self._cells):
+        for key, cell in self._cells.items():
             # ignore auto-sized columns
             if key[1] in self._autoColumns:
                 continue
@@ -367,12 +486,12 @@ class Table(Artist):
             cells.append(cell)
 
         # now set all fontsizes equal
-        for cell in six.itervalues(self._cells):
+        for cell in self._cells.values():
             cell.set_fontsize(fontsize)
 
     def scale(self, xscale, yscale):
         """ Scale column widths by xscale and row heights by yscale. """
-        for c in six.itervalues(self._cells):
+        for c in self._cells.values():
             c.set_width(c.get_width() * xscale)
             c.set_height(c.get_height() * yscale)
 
@@ -383,13 +502,13 @@ class Table(Artist):
         ACCEPTS: a float in points
         """
 
-        for cell in six.itervalues(self._cells):
+        for cell in self._cells.values():
             cell.set_fontsize(size)
+        self.stale = True
 
     def _offset(self, ox, oy):
-        'Move all the artists by ox,oy (axes coords)'
-
-        for c in six.itervalues(self._cells):
+        """Move all the artists by ox, oy (axes coords)."""
+        for c in self._cells.values():
             x, y = c.get_x(), c.get_y()
             c.set_x(x + ox)
             c.set_y(y + oy)
@@ -421,7 +540,7 @@ class Table(Artist):
         else:
             # Position using loc
             (BEST, UR, UL, LL, LR, CL, CR, LC, UC, C,
-             TR, TL, BL, BR, R, L, T, B) = list(xrange(len(self.codes)))
+             TR, TL, BL, BR, R, L, T, B) = range(len(self.codes))
             # defaults for center
             ox = (0.5 - w / 2) - l
             oy = (0.5 - h / 2) - b
@@ -450,44 +569,54 @@ class Table(Artist):
         self._offset(ox, oy)
 
     def get_celld(self):
-        'return a dict of cells in the table'
+        """Return a dict of cells in the table."""
         return self._cells
 
 
 def table(ax,
-    cellText=None, cellColours=None,
-    cellLoc='right', colWidths=None,
-    rowLabels=None, rowColours=None, rowLoc='left',
-    colLabels=None, colColours=None, colLoc='center',
-    loc='bottom', bbox=None,
-    **kwargs):
+          cellText=None, cellColours=None,
+          cellLoc='right', colWidths=None,
+          rowLabels=None, rowColours=None, rowLoc='left',
+          colLabels=None, colColours=None, colLoc='center',
+          loc='bottom', bbox=None, edges='closed',
+          **kwargs):
     """
     TABLE(cellText=None, cellColours=None,
           cellLoc='right', colWidths=None,
           rowLabels=None, rowColours=None, rowLoc='left',
           colLabels=None, colColours=None, colLoc='center',
-          loc='bottom', bbox=None)
+          loc='bottom', bbox=None, edges='closed')
 
     Factory function to generate a Table instance.
 
     Thanks to John Gill for providing the class and table.
     """
+
+    if cellColours is None and cellText is None:
+        raise ValueError('At least one argument from "cellColours" or '
+                         '"cellText" must be provided to create a table.')
+
     # Check we have some cellText
     if cellText is None:
         # assume just colours are needed
         rows = len(cellColours)
         cols = len(cellColours[0])
-        cellText = [[''] * rows] * cols
+        cellText = [[''] * cols] * rows
 
     rows = len(cellText)
     cols = len(cellText[0])
     for row in cellText:
-        assert len(row) == cols
+        if len(row) != cols:
+            raise ValueError("Each row in 'cellText' must have {} columns"
+                             .format(cols))
 
     if cellColours is not None:
-        assert len(cellColours) == rows
+        if len(cellColours) != rows:
+            raise ValueError("'cellColours' must have {} rows".format(rows))
         for row in cellColours:
-            assert len(row) == cols
+            if len(row) != cols:
+                raise ValueError("Each row in 'cellColours' must have {} "
+                                 "columns".format(cols))
     else:
         cellColours = ['w' * cols] * rows
 
@@ -506,7 +635,8 @@ def table(ax,
         rowColours = 'w' * rows
 
     if rowLabels is not None:
-        assert len(rowLabels) == rows
+        if len(rowLabels) != rows:
+            raise ValueError("'rowLabels' must be of length {0}".format(rows))
 
     # If we have column labels, need to shift
     # the text and colour arrays down 1 row
@@ -519,20 +649,18 @@ def table(ax,
     elif colColours is None:
         colColours = 'w' * cols
 
-    if rowLabels is not None:
-        assert len(rowLabels) == rows
-
     # Set up cell colours if not given
     if cellColours is None:
         cellColours = ['w' * cols] * rows
 
     # Now create the table
     table = Table(ax, loc, bbox, **kwargs)
+    table.edges = edges
     height = table._approx_text_height()
 
     # Add the cells
-    for row in xrange(rows):
-        for col in xrange(cols):
+    for row in range(rows):
+        for col in range(cols):
             table.add_cell(row + offset, col,
                            width=colWidths[col], height=height,
                            text=cellText[row][col],
@@ -540,7 +668,7 @@ def table(ax,
                            loc=cellLoc)
     # Do column labels
     if colLabels is not None:
-        for col in xrange(cols):
+        for col in range(cols):
             table.add_cell(0, col,
                            width=colWidths[col], height=height,
                            text=colLabels[col], facecolor=colColours[col],
@@ -548,7 +676,7 @@ def table(ax,
 
     # Do row labels
     if rowLabels is not None:
-        for row in xrange(rows):
+        for row in range(rows):
             table.add_cell(row + offset, -1,
                            width=rowLabelWidth or 1e-15, height=height,
                            text=rowLabels[row], facecolor=rowColours[row],

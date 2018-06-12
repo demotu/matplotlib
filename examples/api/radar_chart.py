@@ -1,5 +1,9 @@
 """
-Example of creating a radar chart (a.k.a. a spider or star chart) [1]_.
+======================================
+Radar chart (aka spider or star chart)
+======================================
+
+This example creates a radar chart, also known as a spider or star chart [1]_.
 
 Although this example allows a frame of either 'circle' or 'polygon', polygon
 frames don't have proper gridlines (the lines are circles instead of polygons).
@@ -33,11 +37,10 @@ def radar_factory(num_vars, frame='circle'):
     """
     # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2*np.pi, num_vars, endpoint=False)
-    # rotate theta such that the first axis is at the top
-    theta += np.pi/2
 
     def draw_poly_patch(self):
-        verts = unit_poly_verts(theta)
+        # rotate theta such that the first axis is at the top
+        verts = unit_poly_verts(theta + np.pi / 2)
         return plt.Polygon(verts, closed=True, edgecolor='k')
 
     def draw_circle_patch(self):
@@ -56,14 +59,18 @@ def radar_factory(num_vars, frame='circle'):
         # define draw_frame method
         draw_patch = patch_dict[frame]
 
-        def fill(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # rotate plot such that the first axis is at the top
+            self.set_theta_zero_location('N')
+
+        def fill(self, *args, closed=True, **kwargs):
             """Override fill so that line is closed by default"""
-            closed = kwargs.pop('closed', True)
-            return super(RadarAxes, self).fill(closed=closed, *args, **kwargs)
+            return super().fill(closed=closed, *args, **kwargs)
 
         def plot(self, *args, **kwargs):
             """Override plot so that line is closed by default"""
-            lines = super(RadarAxes, self).plot(*args, **kwargs)
+            lines = super().plot(*args, **kwargs)
             for line in lines:
                 self._close_line(line)
 
@@ -76,7 +83,7 @@ def radar_factory(num_vars, frame='circle'):
                 line.set_data(x, y)
 
         def set_varlabels(self, labels):
-            self.set_thetagrids(theta*180/np.pi, labels)
+            self.set_thetagrids(np.degrees(theta), labels)
 
         def _gen_axes_patch(self):
             return self.draw_patch()
@@ -89,7 +96,7 @@ def radar_factory(num_vars, frame='circle'):
 
             # spine_type must be 'left', 'right', 'top', 'bottom', or `circle`.
             spine_type = 'circle'
-            verts = unit_poly_verts(theta)
+            verts = unit_poly_verts(theta + np.pi / 2)
             # close off polygon by repeating first vertex
             verts.append(verts[0])
             path = Path(verts)
@@ -131,35 +138,34 @@ def example_data():
     #     Pyrolized Organic Carbon (OP)
     #  2)Inclusion of gas-phase specie carbon monoxide (CO)
     #  3)Inclusion of gas-phase specie ozone (O3).
-    #  4)Inclusion of both gas-phase speciesis present...
-    data = {
-        'column names':
-            ['Sulfate', 'Nitrate', 'EC', 'OC1', 'OC2', 'OC3', 'OP', 'CO',
-             'O3'],
-        'Basecase':
-            [[0.88, 0.01, 0.03, 0.03, 0.00, 0.06, 0.01, 0.00, 0.00],
-             [0.07, 0.95, 0.04, 0.05, 0.00, 0.02, 0.01, 0.00, 0.00],
-             [0.01, 0.02, 0.85, 0.19, 0.05, 0.10, 0.00, 0.00, 0.00],
-             [0.02, 0.01, 0.07, 0.01, 0.21, 0.12, 0.98, 0.00, 0.00],
-             [0.01, 0.01, 0.02, 0.71, 0.74, 0.70, 0.00, 0.00, 0.00]],
-        'With CO':
-            [[0.88, 0.02, 0.02, 0.02, 0.00, 0.05, 0.00, 0.05, 0.00],
-             [0.08, 0.94, 0.04, 0.02, 0.00, 0.01, 0.12, 0.04, 0.00],
-             [0.01, 0.01, 0.79, 0.10, 0.00, 0.05, 0.00, 0.31, 0.00],
-             [0.00, 0.02, 0.03, 0.38, 0.31, 0.31, 0.00, 0.59, 0.00],
-             [0.02, 0.02, 0.11, 0.47, 0.69, 0.58, 0.88, 0.00, 0.00]],
-        'With O3':
-            [[0.89, 0.01, 0.07, 0.00, 0.00, 0.05, 0.00, 0.00, 0.03],
-             [0.07, 0.95, 0.05, 0.04, 0.00, 0.02, 0.12, 0.00, 0.00],
-             [0.01, 0.02, 0.86, 0.27, 0.16, 0.19, 0.00, 0.00, 0.00],
-             [0.01, 0.03, 0.00, 0.32, 0.29, 0.27, 0.00, 0.00, 0.95],
-             [0.02, 0.00, 0.03, 0.37, 0.56, 0.47, 0.87, 0.00, 0.00]],
-        'CO & O3':
-            [[0.87, 0.01, 0.08, 0.00, 0.00, 0.04, 0.00, 0.00, 0.01],
-             [0.09, 0.95, 0.02, 0.03, 0.00, 0.01, 0.13, 0.06, 0.00],
-             [0.01, 0.02, 0.71, 0.24, 0.13, 0.16, 0.00, 0.50, 0.00],
-             [0.01, 0.03, 0.00, 0.28, 0.24, 0.23, 0.00, 0.44, 0.88],
-             [0.02, 0.00, 0.18, 0.45, 0.64, 0.55, 0.86, 0.00, 0.16]]}
+    #  4)Inclusion of both gas-phase species is present...
+    data = [
+        ['Sulfate', 'Nitrate', 'EC', 'OC1', 'OC2', 'OC3', 'OP', 'CO', 'O3'],
+        ('Basecase', [
+            [0.88, 0.01, 0.03, 0.03, 0.00, 0.06, 0.01, 0.00, 0.00],
+            [0.07, 0.95, 0.04, 0.05, 0.00, 0.02, 0.01, 0.00, 0.00],
+            [0.01, 0.02, 0.85, 0.19, 0.05, 0.10, 0.00, 0.00, 0.00],
+            [0.02, 0.01, 0.07, 0.01, 0.21, 0.12, 0.98, 0.00, 0.00],
+            [0.01, 0.01, 0.02, 0.71, 0.74, 0.70, 0.00, 0.00, 0.00]]),
+        ('With CO', [
+            [0.88, 0.02, 0.02, 0.02, 0.00, 0.05, 0.00, 0.05, 0.00],
+            [0.08, 0.94, 0.04, 0.02, 0.00, 0.01, 0.12, 0.04, 0.00],
+            [0.01, 0.01, 0.79, 0.10, 0.00, 0.05, 0.00, 0.31, 0.00],
+            [0.00, 0.02, 0.03, 0.38, 0.31, 0.31, 0.00, 0.59, 0.00],
+            [0.02, 0.02, 0.11, 0.47, 0.69, 0.58, 0.88, 0.00, 0.00]]),
+        ('With O3', [
+            [0.89, 0.01, 0.07, 0.00, 0.00, 0.05, 0.00, 0.00, 0.03],
+            [0.07, 0.95, 0.05, 0.04, 0.00, 0.02, 0.12, 0.00, 0.00],
+            [0.01, 0.02, 0.86, 0.27, 0.16, 0.19, 0.00, 0.00, 0.00],
+            [0.01, 0.03, 0.00, 0.32, 0.29, 0.27, 0.00, 0.00, 0.95],
+            [0.02, 0.00, 0.03, 0.37, 0.56, 0.47, 0.87, 0.00, 0.00]]),
+        ('CO & O3', [
+            [0.87, 0.01, 0.08, 0.00, 0.00, 0.04, 0.00, 0.00, 0.01],
+            [0.09, 0.95, 0.02, 0.03, 0.00, 0.01, 0.13, 0.06, 0.00],
+            [0.01, 0.02, 0.71, 0.24, 0.13, 0.16, 0.00, 0.50, 0.00],
+            [0.01, 0.03, 0.00, 0.28, 0.24, 0.23, 0.00, 0.44, 0.88],
+            [0.02, 0.00, 0.18, 0.45, 0.64, 0.55, 0.86, 0.00, 0.16]])
+    ]
     return data
 
 
@@ -168,29 +174,52 @@ if __name__ == '__main__':
     theta = radar_factory(N, frame='polygon')
 
     data = example_data()
-    spoke_labels = data.pop('column names')
+    spoke_labels = data.pop(0)
 
-    fig = plt.figure(figsize=(9, 9))
+    fig, axes = plt.subplots(figsize=(9, 9), nrows=2, ncols=2,
+                             subplot_kw=dict(projection='radar'))
     fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
 
     colors = ['b', 'r', 'g', 'm', 'y']
     # Plot the four cases from the example data on separate axes
-    for n, title in enumerate(data.keys()):
-        ax = fig.add_subplot(2, 2, n + 1, projection='radar')
-        plt.rgrids([0.2, 0.4, 0.6, 0.8])
+    for ax, (title, case_data) in zip(axes.flatten(), data):
+        ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
         ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
                      horizontalalignment='center', verticalalignment='center')
-        for d, color in zip(data[title], colors):
+        for d, color in zip(case_data, colors):
             ax.plot(theta, d, color=color)
             ax.fill(theta, d, facecolor=color, alpha=0.25)
         ax.set_varlabels(spoke_labels)
 
     # add legend relative to top-left plot
-    plt.subplot(2, 2, 1)
+    ax = axes[0, 0]
     labels = ('Factor 1', 'Factor 2', 'Factor 3', 'Factor 4', 'Factor 5')
-    legend = plt.legend(labels, loc=(0.9, .95), labelspacing=0.1)
-    plt.setp(legend.get_texts(), fontsize='small')
+    legend = ax.legend(labels, loc=(0.9, .95),
+                       labelspacing=0.1, fontsize='small')
 
-    plt.figtext(0.5, 0.965, '5-Factor Solution Profiles Across Four Scenarios',
-                ha='center', color='black', weight='bold', size='large')
+    fig.text(0.5, 0.965, '5-Factor Solution Profiles Across Four Scenarios',
+             horizontalalignment='center', color='black', weight='bold',
+             size='large')
+
     plt.show()
+
+
+#############################################################################
+#
+# ------------
+#
+# References
+# """"""""""
+#
+# The use of the following functions, methods, classes and modules is shown
+# in this example:
+
+import matplotlib
+matplotlib.path
+matplotlib.path.Path
+matplotlib.spines
+matplotlib.spines.Spine
+matplotlib.projections
+matplotlib.projections.polar
+matplotlib.projections.polar.PolarAxes
+matplotlib.projections.register_projection

@@ -1,8 +1,3 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
 import os
 import sys
 from hashlib import md5
@@ -55,7 +50,7 @@ def latex2png(latex, filename, fontset='cm'):
             depth = mathtext_parser.to_png(filename, latex, dpi=100)
         except:
             warnings.warn("Could not render math expression %s" % latex,
-                          Warning)
+                          Warning, stacklevel=2)
             depth = 0
     rcParams['mathtext.fontset'] = orig_fontset
     sys.stdout.write("#")
@@ -87,16 +82,15 @@ def latex2html(node, source):
 
     return '<img src="%s/%s.png" %s%s/>' % (path, name, cls, style)
 
+
 def setup(app):
     setup.app = app
-
-    app.add_node(latex_math)
-    app.add_role('math', math_role)
 
     # Add visit/depart methods to HTML-Translator:
     def visit_latex_math_html(self, node):
         source = self.document.attributes['source']
         self.body.append(latex2html(node, source))
+
     def depart_latex_math_html(self, node):
         pass
 
@@ -109,13 +103,16 @@ def setup(app):
             self.body.extend(['\\begin{equation}',
                               node['latex'],
                               '\\end{equation}'])
+
     def depart_latex_math_latex(self, node):
         pass
 
-    app.add_node(latex_math, html=(visit_latex_math_html,
-                                   depart_latex_math_html))
-    app.add_node(latex_math, latex=(visit_latex_math_latex,
-                                    depart_latex_math_latex))
+    app.add_node(latex_math,
+                 html=(visit_latex_math_html, depart_latex_math_html),
+                 latex=(visit_latex_math_latex, depart_latex_math_latex))
     app.add_role('math', math_role)
     app.add_directive('math', math_directive,
                       True, (0, 0, 0), **options_spec)
+
+    metadata = {'parallel_read_safe': True, 'parallel_write_safe': True}
+    return metadata

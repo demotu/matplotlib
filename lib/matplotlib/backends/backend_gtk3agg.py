@@ -1,22 +1,21 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
 import numpy as np
-import sys
 import warnings
 
-from . import backend_agg
-from . import backend_gtk3
-from .backend_cairo import cairo, HAS_CAIRO_CFFI
-from matplotlib.figure import Figure
+from . import backend_agg, backend_cairo, backend_gtk3
+from ._gtk3_compat import gi
+from .backend_cairo import cairo
+from .backend_gtk3 import _BackendGTK3
 from matplotlib import transforms
 
-if six.PY3 and not HAS_CAIRO_CFFI:
-    warnings.warn(
-        "The Gtk3Agg backend is known to not work on Python 3.x with pycairo. "
-        "Try installing cairocffi.")
+# The following combinations are allowed:
+#   gi + pycairo
+#   gi + cairocffi
+#   pgi + cairocffi
+# (pgi doesn't work with pycairo)
+# We always try to import cairocffi first so if a check below fails it means
+# that cairocffi was unavailable to start with.
+if gi.__name__ == "pgi" and cairo.__name__ == "cairo":
+    raise ImportError("pgi and pycairo are not compatible")
 
 
 class FigureCanvasGTK3Agg(backend_gtk3.FigureCanvasGTK3,
@@ -38,19 +37,12 @@ class FigureCanvasGTK3Agg(backend_gtk3.FigureCanvasGTK3,
         w, h = allocation.width, allocation.height
 
         if not len(self._bbox_queue):
-            if self._need_redraw:
-                self._render_figure(w, h)
-                bbox_queue = [transforms.Bbox([[0, 0], [w, h]])]
-            else:
-                return
+            self._render_figure(w, h)
+            bbox_queue = [transforms.Bbox([[0, 0], [w, h]])]
         else:
             bbox_queue = self._bbox_queue
 
-        if HAS_CAIRO_CFFI:
-            ctx = cairo.Context._from_pointer(
-                cairo.ffi.cast('cairo_t **',
-                               id(ctx) + object.__basicsize__)[0],
-                incref=True)
+        ctx = backend_cairo._to_context(ctx)
 
         for bbox in bbox_queue:
             area = self.copy_from_bbox(bbox)
@@ -61,12 +53,9 @@ class FigureCanvasGTK3Agg(backend_gtk3.FigureCanvasGTK3,
             width = int(bbox.x1) - int(bbox.x0)
             height = int(bbox.y1) - int(bbox.y0)
 
-            if HAS_CAIRO_CFFI:
-                image = cairo.ImageSurface.create_for_data(
-                    buf.data, cairo.FORMAT_ARGB32, width, height)
-            else:
-                image = cairo.ImageSurface.create_for_data(
-                    buf, cairo.FORMAT_ARGB32, width, height)
+            image = cairo.ImageSurface.create_for_data(
+                buf.ravel().data, cairo.FORMAT_ARGB32,
+                width, height, width * 4)
             ctx.set_source_surface(image, x, y)
             ctx.paint()
 
@@ -101,24 +90,7 @@ class FigureManagerGTK3Agg(backend_gtk3.FigureManagerGTK3):
     pass
 
 
-def new_figure_manager(num, *args, **kwargs):
-    """
-    Create a new figure manager instance
-    """
-    FigureClass = kwargs.pop('FigureClass', Figure)
-    thisFig = FigureClass(*args, **kwargs)
-    return new_figure_manager_given_figure(num, thisFig)
-
-
-def new_figure_manager_given_figure(num, figure):
-    """
-    Create a new figure manager instance for the given figure.
-    """
-    canvas = FigureCanvasGTK3Agg(figure)
-    manager = FigureManagerGTK3Agg(canvas, num)
-    return manager
-
-
-FigureCanvas = FigureCanvasGTK3Agg
-FigureManager = FigureManagerGTK3Agg
-show = backend_gtk3.show
+@_BackendGTK3.export
+class _BackendGTK3Cairo(_BackendGTK3):
+    FigureCanvas = FigureCanvasGTK3Agg
+    FigureManager = FigureManagerGTK3Agg

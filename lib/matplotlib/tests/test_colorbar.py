@@ -1,15 +1,10 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
 import numpy as np
-from numpy import ma
-import matplotlib
-from matplotlib.testing.decorators import image_comparison, cleanup
+import pytest
+
+from matplotlib import rc_context
+from matplotlib.testing.decorators import image_comparison
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
-from matplotlib.colors import BoundaryNorm
+from matplotlib.colors import BoundaryNorm, LogNorm
 from matplotlib.cm import get_cmap
 from matplotlib.colorbar import ColorbarBase
 
@@ -52,15 +47,14 @@ def _colorbar_extension_shape(spacing):
         boundaries = values = norm.boundaries
         # Create a subplot.
         cax = fig.add_subplot(4, 1, i + 1)
-        # Turn off text and ticks.
-        for item in cax.get_xticklabels() + cax.get_yticklabels() +\
-                cax.get_xticklines() + cax.get_yticklines():
-            item.set_visible(False)
         # Generate the colorbar.
         cb = ColorbarBase(cax, cmap=cmap, norm=norm,
                 boundaries=boundaries, values=values,
                 extend=extension_type, extendrect=True,
                 orientation='horizontal', spacing=spacing)
+        # Turn off text and ticks.
+        cax.tick_params(left=False, labelleft=False,
+                        bottom=False, labelbottom=False)
     # Return the figure to the caller.
     return fig
 
@@ -84,15 +78,14 @@ def _colorbar_extension_length(spacing):
         for j, extendfrac in enumerate((None, 'auto', 0.1)):
             # Create a subplot.
             cax = fig.add_subplot(12, 1, i*3 + j + 1)
-            # Turn off text and ticks.
-            for item in cax.get_xticklabels() + cax.get_yticklabels() +\
-                    cax.get_xticklines() + cax.get_yticklines():
-                item.set_visible(False)
             # Generate the colorbar.
-            cb = ColorbarBase(cax, cmap=cmap, norm=norm,
-                    boundaries=boundaries, values=values,
-                    extend=extension_type, extendfrac=extendfrac,
-                    orientation='horizontal', spacing=spacing)
+            ColorbarBase(cax, cmap=cmap, norm=norm,
+                         boundaries=boundaries, values=values,
+                         extend=extension_type, extendfrac=extendfrac,
+                         orientation='horizontal', spacing=spacing)
+            # Turn off text and ticks.
+            cax.tick_params(left=False, labelleft=False,
+                            bottom=False, labelbottom=False)
     # Return the figure to the caller.
     return fig
 
@@ -104,8 +97,8 @@ def _colorbar_extension_length(spacing):
 def test_colorbar_extension_shape():
     '''Test rectangular colorbar extensions.'''
     # Create figures for uniform and proportionally spaced colorbars.
-    fig1 = _colorbar_extension_shape('uniform')
-    fig2 = _colorbar_extension_shape('proportional')
+    _colorbar_extension_shape('uniform')
+    _colorbar_extension_shape('proportional')
 
 
 @image_comparison(baseline_images=['colorbar_extensions_uniform',
@@ -114,8 +107,8 @@ def test_colorbar_extension_shape():
 def test_colorbar_extension_length():
     '''Test variable length colorbar extensions.'''
     # Create figures for uniform and proportionally spaced colorbars.
-    fig1 = _colorbar_extension_length('uniform')
-    fig2 = _colorbar_extension_length('proportional')
+    _colorbar_extension_length('uniform')
+    _colorbar_extension_length('proportional')
 
 
 @image_comparison(baseline_images=['cbar_with_orientation',
@@ -211,7 +204,9 @@ def test_colorbar_single_scatter():
     plt.colorbar(cs)
 
 
-def _test_remove_from_figure(use_gridspec):
+@pytest.mark.parametrize('use_gridspec', [False, True],
+                         ids=['no gridspec', 'with gridspec'])
+def test_remove_from_figure(use_gridspec):
     """
     Test `remove_from_figure` with the specified ``use_gridspec`` setting
     """
@@ -228,24 +223,135 @@ def _test_remove_from_figure(use_gridspec):
     assert (pre_figbox == post_figbox).all()
 
 
-@cleanup
-def test_remove_from_figure_with_gridspec():
-    """
-    Make sure that `remove_from_figure` removes the colorbar and properly
-    restores the gridspec
-    """
-    _test_remove_from_figure(True)
+def test_colorbarbase():
+    # smoke test from #3805
+    ax = plt.gca()
+    ColorbarBase(ax, plt.cm.bone)
 
 
-@cleanup
-def test_remove_from_figure_no_gridspec():
-    """
-    Make sure that `remove_from_figure` removes a colorbar that was created
-    without modifying the gridspec
-    """
-    _test_remove_from_figure(False)
+@image_comparison(
+    baseline_images=['colorbar_closed_patch'],
+    remove_text=True)
+def test_colorbar_closed_patch():
+    fig = plt.figure(figsize=(8, 6))
+    ax1 = fig.add_axes([0.05, 0.85, 0.9, 0.1])
+    ax2 = fig.add_axes([0.1, 0.65, 0.75, 0.1])
+    ax3 = fig.add_axes([0.05, 0.45, 0.9, 0.1])
+    ax4 = fig.add_axes([0.05, 0.25, 0.9, 0.1])
+    ax5 = fig.add_axes([0.05, 0.05, 0.9, 0.1])
+
+    cmap = get_cmap("RdBu", lut=5)
+
+    im = ax1.pcolormesh(np.linspace(0, 10, 16).reshape((4, 4)), cmap=cmap)
+    values = np.linspace(0, 10, 5)
+
+    with rc_context({'axes.linewidth': 16}):
+        plt.colorbar(im, cax=ax2, cmap=cmap, orientation='horizontal',
+                     extend='both', extendfrac=0.5, values=values)
+        plt.colorbar(im, cax=ax3, cmap=cmap, orientation='horizontal',
+                     extend='both', values=values)
+        plt.colorbar(im, cax=ax4, cmap=cmap, orientation='horizontal',
+                     extend='both', extendrect=True, values=values)
+        plt.colorbar(im, cax=ax5, cmap=cmap, orientation='horizontal',
+                     extend='neither', values=values)
 
 
-if __name__ == '__main__':
-    import nose
-    nose.runmodule(argv=['-s', '--with-doctest'], exit=False)
+def test_colorbar_ticks():
+    # test fix for #5673
+    fig, ax = plt.subplots()
+    x = np.arange(-3.0, 4.001)
+    y = np.arange(-4.0, 3.001)
+    X, Y = np.meshgrid(x, y)
+    Z = X * Y
+    clevs = np.array([-12, -5, 0, 5, 12], dtype=float)
+    colors = ['r', 'g', 'b', 'c']
+    cs = ax.contourf(X, Y, Z, clevs, colors=colors)
+    cbar = fig.colorbar(cs, ax=ax, extend='neither',
+                        orientation='horizontal', ticks=clevs)
+    assert len(cbar.ax.xaxis.get_ticklocs()) == len(clevs)
+
+
+def test_colorbar_autoticks():
+    # Test new autotick modes. Needs to be classic because
+    # non-classic doesn't go this route.
+    with rc_context({'_internal.classic_mode': False}):
+        fig, ax = plt.subplots(2, 1)
+        x = np.arange(-3.0, 4.001)
+        y = np.arange(-4.0, 3.001)
+        X, Y = np.meshgrid(x, y)
+        Z = X * Y
+        pcm = ax[0].pcolormesh(X, Y, Z)
+        cbar = fig.colorbar(pcm, ax=ax[0], extend='both',
+                            orientation='vertical')
+
+        pcm = ax[1].pcolormesh(X, Y, Z)
+        cbar2 = fig.colorbar(pcm, ax=ax[1], extend='both',
+                            orientation='vertical', shrink=0.4)
+        np.testing.assert_almost_equal(cbar.ax.yaxis.get_ticklocs(),
+                np.arange(-15, 16., 5.))
+        np.testing.assert_almost_equal(cbar2.ax.yaxis.get_ticklocs(),
+                np.arange(-20, 21., 10.))
+
+
+def test_colorbar_autotickslog():
+    # Test new autotick modes...
+    with rc_context({'_internal.classic_mode': False}):
+        fig, ax = plt.subplots(2, 1)
+        x = np.arange(-3.0, 4.001)
+        y = np.arange(-4.0, 3.001)
+        X, Y = np.meshgrid(x, y)
+        Z = X * Y
+        pcm = ax[0].pcolormesh(X, Y, 10**Z, norm=LogNorm())
+        cbar = fig.colorbar(pcm, ax=ax[0], extend='both',
+                            orientation='vertical')
+
+        pcm = ax[1].pcolormesh(X, Y, 10**Z, norm=LogNorm())
+        cbar2 = fig.colorbar(pcm, ax=ax[1], extend='both',
+                            orientation='vertical', shrink=0.4)
+        np.testing.assert_almost_equal(cbar.ax.yaxis.get_ticklocs(),
+                10**np.arange(-12, 12.2, 4.))
+        np.testing.assert_almost_equal(cbar2.ax.yaxis.get_ticklocs(),
+                10**np.arange(-12, 13., 12.))
+
+
+def test_colorbar_get_ticks():
+    # test feature for #5792
+    plt.figure()
+    data = np.arange(1200).reshape(30, 40)
+    levels = [0, 200, 400, 600, 800, 1000, 1200]
+
+    plt.subplot()
+    plt.contourf(data, levels=levels)
+
+    # testing getter for user set ticks
+    userTicks = plt.colorbar(ticks=[0, 600, 1200])
+    assert userTicks.get_ticks().tolist() == [0, 600, 1200]
+
+    # testing for getter after calling set_ticks
+    userTicks.set_ticks([600, 700, 800])
+    assert userTicks.get_ticks().tolist() == [600, 700, 800]
+
+    # testing for getter after calling set_ticks with some ticks out of bounds
+    userTicks.set_ticks([600, 1300, 1400, 1500])
+    assert userTicks.get_ticks().tolist() == [600]
+
+    # testing getter when no ticks are assigned
+    defTicks = plt.colorbar(orientation='horizontal')
+    assert defTicks.get_ticks().tolist() == levels
+
+
+def test_colorbar_lognorm_extension():
+    # Test that colorbar with lognorm is extended correctly
+    f, ax = plt.subplots()
+    cb = ColorbarBase(ax, norm=LogNorm(vmin=0.1, vmax=1000.0),
+                      orientation='vertical', extend='both')
+    assert cb._values[0] >= 0.0
+
+
+def test_colorbar_axes_kw():
+    # test fix for #8493: This does only test, that axes-related keywords pass
+    # and do not raise an exception.
+    plt.figure()
+    plt.imshow(([[1, 2], [3, 4]]))
+    plt.colorbar(orientation='horizontal', fraction=0.2, pad=0.2, shrink=0.5,
+                 aspect=10, anchor=(0., 0.), panchor=(0., 1.))

@@ -1,5 +1,5 @@
 You have a few different options available to you for embedding
-matplotlib  in a wxPython application
+matplotlib in a wxPython application
 
 1. Embed one of the wxPython backend widgets (which subclass wx.Panel)
    directly and draw plots on it using matplotlib's object-oriented
@@ -16,6 +16,6 @@ matplotlib  in a wxPython application
 
 	http://agni.phys.iit.edu/~kmcivor/wxmpl/
 
-Each of these approachs has different benefits and drawbacks, so I
+Each of these approaches has different benefits and drawbacks, so I
 encourage you to evaluate each of them and select the one that best
 meets your needs.

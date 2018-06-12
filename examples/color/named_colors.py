@@ -1,73 +1,54 @@
 """
-Visualization of named colors.
+========================
+Visualizing named colors
+========================
 
 Simple plot example with the named colors and its visual representation.
+
+For more information on colors in matplotlib see
+
+* the :doc:`/tutorials/colors/colors` tutorial;
+* the `matplotlib.colors` API;
+* the :doc:`/gallery/color/color_demo`.
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
-
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import colors
+from matplotlib import colors as mcolors
 
 
-colors_ = list(six.iteritems(colors.cnames))
+colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 
-# Add the single letter colors.
-for name, rgb in six.iteritems(colors.ColorConverter.colors):
-    hex_ = colors.rgb2hex(rgb)
-    colors_.append((name, hex_))
+# Sort colors by hue, saturation, value and name.
+by_hsv = sorted((tuple(mcolors.rgb_to_hsv(mcolors.to_rgba(color)[:3])), name)
+                for name, color in colors.items())
+sorted_names = [name for hsv, name in by_hsv]
 
-# Transform to hex color values.
-hex_ = [color[1] for color in colors_]
-# Get the rgb equivalent.
-rgb = [colors.hex2color(color) for color in hex_]
-# Get the hsv equivalent.
-hsv = [colors.rgb_to_hsv(color) for color in rgb]
-
-# Split the hsv values to sort.
-hue = [color[0] for color in hsv]
-sat = [color[1] for color in hsv]
-val = [color[2] for color in hsv]
-
-# Sort by hue, saturation and value.
-ind = np.lexsort((val, sat, hue))
-sorted_colors = [colors_[i] for i in ind]
-
-n = len(sorted_colors)
+n = len(sorted_names)
 ncols = 4
-nrows = int(np.ceil(1. * n / ncols))
+nrows = n // ncols + 1
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
+fig, ax = plt.subplots(figsize=(8, 5))
 
+# Get height and width
 X, Y = fig.get_dpi() * fig.get_size_inches()
-
-# row height
 h = Y / (nrows + 1)
-# col width
 w = X / ncols
 
-for i, (name, color) in enumerate(sorted_colors):
+for i, name in enumerate(sorted_names):
     col = i % ncols
-    row = int(i / ncols)
+    row = i // ncols
     y = Y - (row * h) - h
 
     xi_line = w * (col + 0.05)
     xf_line = w * (col + 0.25)
     xi_text = w * (col + 0.3)
 
-    ax.text(xi_text,  y, name, fontsize=(h * 0.8),
+    ax.text(xi_text, y, name, fontsize=(h * 0.8),
             horizontalalignment='left',
             verticalalignment='center')
 
-#     Add extra black line a little bit thicker to make
-#     clear colors more visible.
-    ax.hlines(y, xi_line, xf_line, color='black', linewidth=(h * 0.7))
-    ax.hlines(y + h * 0.1, xi_line, xf_line, color=color, linewidth=(h * 0.6))
+    ax.hlines(y + h * 0.1, xi_line, xf_line,
+              color=colors[name], linewidth=(h * 0.6))
 
 ax.set_xlim(0, X)
 ax.set_ylim(0, Y)
@@ -77,3 +58,22 @@ fig.subplots_adjust(left=0, right=1,
                     top=1, bottom=0,
                     hspace=0, wspace=0)
 plt.show()
+
+#############################################################################
+#
+# ------------
+#
+# References
+# """"""""""
+#
+# The use of the following functions, methods, classes and modules is shown
+# in this example:
+
+import matplotlib
+matplotlib.colors
+matplotlib.colors.rgb_to_hsv
+matplotlib.colors.to_rgba
+matplotlib.figure.Figure.get_size_inches
+matplotlib.figure.Figure.subplots_adjust
+matplotlib.axes.Axes.text
+matplotlib.axes.Axes.hlines

@@ -13,4 +13,4 @@ Contents:
    set_up_fork
    configure_git
    development_workflow
-   dot2_dot3
+   maintainer_workflow

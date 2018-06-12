@@ -1,17 +1,16 @@
-from __future__ import print_function
 symbols = [
     ["Lower-case Greek",
-     5,
+     6,
      r"""\alpha \beta \gamma \chi \delta \epsilon \eta \iota \kappa
          \lambda \mu \nu \omega \phi \pi \psi \rho \sigma \tau \theta
          \upsilon \xi \zeta \digamma \varepsilon \varkappa \varphi
          \varpi \varrho \varsigma \vartheta"""],
     ["Upper-case Greek",
-     6,
+     8,
      r"""\Delta \Gamma \Lambda \Omega \Phi \Pi \Psi \Sigma \Theta
      \Upsilon \Xi \mho \nabla"""],
     ["Hebrew",
-     4,
+     6,
      r"""\aleph \beth \daleth \gimel"""],
     ["Delimiters",
      6,
@@ -19,16 +18,16 @@ symbols = [
          \uparrow \lrcorner \| \langle \lceil [ \Downarrow \ulcorner
          \Vert \rangle \rceil ] \downarrow \urcorner"""],
     ["Big symbols",
-     5,
+     6,
      r"""\bigcap \bigcup \bigodot \bigoplus \bigotimes \biguplus
          \bigvee \bigwedge \coprod \oint \prod \sum \int"""],
     ["Standard function names",
-     4,
+     6,
      r"""\arccos \csc \ker \min \arcsin \deg \lg \Pr \arctan \det \lim
          \gcd \ln \sup \cot \hom \log \tan \coth \inf \max \tanh
          \sec \arg \dim \liminf \sin \cos \exp \limsup \sinh \cosh"""],
     ["Binary operation and relation symbols",
-     3,
+     4,
      r"""\ast \pm \slash \cap \star \mp \cup \cdot \uplus
      \triangleleft \circ \odot \sqcap \triangleright \bullet \ominus
      \sqcup \bigcirc \oplus \wedge \diamond \oslash \vee
@@ -60,7 +59,7 @@ symbols = [
      \Doteq \nsubset \eqcolon \ne
      """],
     ["Arrow symbols",
-     2,
+     4,
      r"""\leftarrow \longleftarrow \uparrow \Leftarrow \Longleftarrow
      \Uparrow \rightarrow \longrightarrow \downarrow \Rightarrow
      \Longrightarrow \Downarrow \leftrightarrow \updownarrow
@@ -83,7 +82,7 @@ symbols = [
      \leftsquigarrow
      """],
     ["Miscellaneous symbols",
-     3,
+     4,
      r"""\neg \infty \forall \wp \exists \bigstar \angle \partial
      \nexists \measuredangle \eth \emptyset \sphericalangle \clubsuit
      \varnothing \complement \diamondsuit \imath \Finv \triangledown
@@ -106,25 +105,19 @@ def run(state_machine):
 
     lines = []
     for category, columns, syms in symbols:
-        syms = syms.split()
-        syms.sort()
+        syms = sorted(syms.split())
         lines.append("**%s**" % category)
         lines.append('')
-        max_width = 0
-        for sym in syms:
-            max_width = max(max_width, len(sym))
-        max_width = max_width * 2 + 16
+        max_width = max(map(len, syms)) * 2 + 16
         header = "    " + (('=' * max_width) + ' ') * columns
-        format = '%%%ds' % max_width
-        for chunk in get_n(20, get_n(columns, syms)):
-            lines.append(header)
-            for part in chunk:
-                line = []
-                for sym in part:
-                    line.append(format % (":math:`%s` ``%s``" % (sym, sym)))
-                lines.append("    " + " ".join(line))
-            lines.append(header)
-            lines.append('')
+        lines.append(header)
+        for part in get_n(columns, syms):
+            line = "    " + " ".join(
+                ":math:`{0}` ``{0}``".format(sym).rjust(max_width)
+                for sym in part)
+            lines.append(line)
+        lines.append(header)
+        lines.append('')
 
     state_machine.insert_input(lines, "Symbol table")
     return []
@@ -137,6 +130,9 @@ def setup(app):
     app.add_directive(
         'math_symbol_table', math_symbol_table_directive,
         False, (0, 1, 0))
+
+    metadata = {'parallel_read_safe': True, 'parallel_write_safe': True}
+    return metadata
 
 if __name__ == "__main__":
     # Do some verification of the tables

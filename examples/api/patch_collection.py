@@ -1,8 +1,20 @@
+"""
+============================
+Circles, Wedges and Polygons
+============================
+
+This example demonstrates how to use
+:class:`patch collections<~.collections.PatchCollection>`.
+"""
+
 import numpy as np
 import matplotlib
 from matplotlib.patches import Circle, Wedge, Polygon
 from matplotlib.collections import PatchCollection
 import matplotlib.pyplot as plt
+
+# Fixing random state for reproducibility
+np.random.seed(19680801)
 
 
 fig, ax = plt.subplots()
@@ -39,9 +51,29 @@ for i in range(N):
     patches.append(polygon)
 
 colors = 100*np.random.rand(len(patches))
-p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.4)
+p = PatchCollection(patches, alpha=0.4)
 p.set_array(np.array(colors))
 ax.add_collection(p)
-plt.colorbar(p)
+fig.colorbar(p, ax=ax)
 
 plt.show()
+
+#############################################################################
+#
+# ------------
+#
+# References
+# """"""""""
+#
+# The use of the following functions, methods, classes and modules is shown
+# in this example:
+
+import matplotlib
+matplotlib.patches
+matplotlib.patches.Circle
+matplotlib.patches.Wedge
+matplotlib.patches.Polygon
+matplotlib.collections.PatchCollection
+matplotlib.collections.Collection.set_array
+matplotlib.axes.Axes.add_collection
+matplotlib.figure.Figure.colorbar

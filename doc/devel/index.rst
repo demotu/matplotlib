@@ -4,7 +4,7 @@
 The Matplotlib Developers' Guide
 ################################
 
-.. htmlonly::
+.. only:: html
 
    :Release: |version|
    :Date: |today|
@@ -12,12 +12,19 @@ The Matplotlib Developers' Guide
 .. toctree::
    :maxdepth: 2
 
-   coding_guide.rst
-   portable_code.rst
-   license.rst
-   gitwash/index.rst
+   contributing.rst
    testing.rst
    documenting_mpl.rst
-   release_guide.rst
-   transformations.rst
+   plot_directive.rst
    add_new_projection.rst
+   gitwash/index.rst
+   coding_guide.rst
+   release_guide.rst
+   min_dep_policy.rst
+   MEP/index
+
+.. toctree::
+   :hidden:
+
+   license.rst
+   color_changes

@@ -1,15 +1,11 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-import six
 import warnings
 
 import numpy as np
 
-from matplotlib.testing.decorators import image_comparison, knownfailureif
+from matplotlib.testing.decorators import image_comparison
 import matplotlib.pyplot as plt
-from nose.tools import assert_raises
-from numpy.testing import assert_array_equal
+from matplotlib.offsetbox import AnchoredOffsetbox, DrawingArea
+from matplotlib.patches import Rectangle
 
 
 def example_plot(ax, fontsize=12):
@@ -31,7 +27,7 @@ def test_tight_layout1():
 
 @image_comparison(baseline_images=['tight_layout2'])
 def test_tight_layout2():
-    'Test tight_layout for mutiple subplots'
+    'Test tight_layout for multiple subplots'
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
     example_plot(ax1)
     example_plot(ax2)
@@ -42,7 +38,7 @@ def test_tight_layout2():
 
 @image_comparison(baseline_images=['tight_layout3'])
 def test_tight_layout3():
-    'Test tight_layout for mutiple subplots'
+    'Test tight_layout for multiple subplots'
 
     fig = plt.figure()
 
@@ -58,7 +54,7 @@ def test_tight_layout3():
 
 
 @image_comparison(baseline_images=['tight_layout4'],
-                  freetype_version=('2.4.5', '2.4.9'))
+                  freetype_version=('2.5.5', '2.6.1'))
 def test_tight_layout4():
     'Test tight_layout for subplot2grid'
 
@@ -148,6 +144,7 @@ def test_tight_layout7():
     ax.set_title('Right Title', loc='right', fontsize=fontsize)
     plt.tight_layout()
 
+
 @image_comparison(baseline_images=['tight_layout8'])
 def test_tight_layout8():
     'Test automatic use of tight_layout'
@@ -155,3 +152,158 @@ def test_tight_layout8():
     fig.set_tight_layout({'pad': .1})
     ax = fig.add_subplot(111)
     example_plot(ax, fontsize=24)
+
+
+@image_comparison(baseline_images=['tight_layout9'])
+def test_tight_layout9():
+    # Test tight_layout for non-visible suplots
+    # GH 8244
+    f, axarr = plt.subplots(2, 2)
+    axarr[1][1].set_visible(False)
+    plt.tight_layout()
+
+
+# The following test is misleading when the text is removed.
+@image_comparison(baseline_images=['outward_ticks'], remove_text=False)
+def test_outward_ticks():
+    'Test automatic use of tight_layout'
+    fig = plt.figure()
+    ax = fig.add_subplot(221)
+    ax.xaxis.set_tick_params(tickdir='out', length=16, width=3)
+    ax.yaxis.set_tick_params(tickdir='out', length=16, width=3)
+    ax.xaxis.set_tick_params(
+        tickdir='out', length=32, width=3, tick1On=True, which='minor')
+    ax.yaxis.set_tick_params(
+        tickdir='out', length=32, width=3, tick1On=True, which='minor')
+    # The following minor ticks are not labelled, and they
+    # are drawn over the major ticks and labels--ugly!
+    ax.xaxis.set_ticks([0], minor=True)
+    ax.yaxis.set_ticks([0], minor=True)
+    ax = fig.add_subplot(222)
+    ax.xaxis.set_tick_params(tickdir='in', length=32, width=3)
+    ax.yaxis.set_tick_params(tickdir='in', length=32, width=3)
+    ax = fig.add_subplot(223)
+    ax.xaxis.set_tick_params(tickdir='inout', length=32, width=3)
+    ax.yaxis.set_tick_params(tickdir='inout', length=32, width=3)
+    ax = fig.add_subplot(224)
+    ax.xaxis.set_tick_params(tickdir='out', length=32, width=3)
+    ax.yaxis.set_tick_params(tickdir='out', length=32, width=3)
+    plt.tight_layout()
+
+
+def add_offsetboxes(ax, size=10, margin=.1, color='black'):
+    """
+    Surround ax with OffsetBoxes
+    """
+    m, mp = margin, 1+margin
+    anchor_points = [(-m, -m), (-m, .5), (-m, mp),
+                     (mp, .5), (.5, mp), (mp, mp),
+                     (.5, -m), (mp, -m), (.5, -m)]
+    for point in anchor_points:
+        da = DrawingArea(size, size)
+        background = Rectangle((0, 0), width=size,
+                               height=size,
+                               facecolor=color,
+                               edgecolor='None',
+                               linewidth=0,
+                               antialiased=False)
+        da.add_artist(background)
+
+        anchored_box = AnchoredOffsetbox(
+            loc='center',
+            child=da,
+            pad=0.,
+            frameon=False,
+            bbox_to_anchor=point,
+            bbox_transform=ax.transAxes,
+            borderpad=0.)
+        ax.add_artist(anchored_box)
+    return anchored_box
+
+
+@image_comparison(baseline_images=['tight_layout_offsetboxes1',
+                                   'tight_layout_offsetboxes2'])
+def test_tight_layout_offsetboxes():
+    # 1.
+    # - Create 4 subplots
+    # - Plot a diagonal line on them
+    # - Surround each plot with 7 boxes
+    # - Use tight_layout
+    # - See that the squares are included in the tight_layout
+    #   and that the squares in the middle do not overlap
+    #
+    # 2.
+    # - Make the squares around the right side axes invisible
+    # - See that the invisible squares do not affect the
+    #   tight_layout
+    rows = cols = 2
+    colors = ['red', 'blue', 'green', 'yellow']
+    x = y = [0, 1]
+
+    def _subplots():
+        _, axs = plt.subplots(rows, cols)
+        axs = axs.flat
+        for ax, color in zip(axs, colors):
+            ax.plot(x, y, color=color)
+            add_offsetboxes(ax, 20, color=color)
+        return axs
+
+    # 1.
+    axs = _subplots()
+    plt.tight_layout()
+
+    # 2.
+    axs = _subplots()
+    for ax in (axs[cols-1::rows]):
+        for child in ax.get_children():
+            if isinstance(child, AnchoredOffsetbox):
+                child.set_visible(False)
+
+    plt.tight_layout()
+
+
+def test_empty_layout():
+    """Tests that tight layout doesn't cause an error when there are
+    no axes.
+    """
+
+    fig = plt.gcf()
+    fig.tight_layout()
+
+
+def test_verybig_decorators_horizontal():
+    "Test that warning emitted when xlabel too big"
+    fig, ax = plt.subplots(figsize=(3, 2))
+    ax.set_xlabel('a' * 100)
+    with warnings.catch_warnings(record=True) as w:
+        fig.tight_layout()
+        assert len(w) == 1
+
+
+def test_verybig_decorators_vertical():
+    "Test that warning emitted when xlabel too big"
+    fig, ax = plt.subplots(figsize=(3, 2))
+    ax.set_ylabel('a' * 100)
+    with warnings.catch_warnings(record=True) as w:
+        fig.tight_layout()
+        assert len(w) == 1
+
+
+def test_big_decorators_horizontal():
+    "Test that warning emitted when xlabel too big"
+    fig, axs = plt.subplots(1, 2, figsize=(3, 2))
+    axs[0].set_xlabel('a' * 30)
+    axs[1].set_xlabel('b' * 30)
+    with warnings.catch_warnings(record=True) as w:
+        fig.tight_layout()
+        assert len(w) == 1
+
+
+def test_big_decorators_vertical():
+    "Test that warning emitted when xlabel too big"
+    fig, axs = plt.subplots(2, 1, figsize=(3, 2))
+    axs[0].set_ylabel('a' * 20)
+    axs[1].set_ylabel('b' * 20)
+    with warnings.catch_warnings(record=True) as w:
+        fig.tight_layout()
+        assert len(w) == 1

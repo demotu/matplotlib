@@ -8,22 +8,23 @@ Glossary
 .. glossary::
 
   AGG
-      The Anti-Grain Geometry (`Agg <http://agg.sourceforge.net/antigrain.com/index.html>`_) rendering engine, capable of rendering
-      high-quality images
+      The Anti-Grain Geometry (`Agg <http://antigrain.com/>`_) rendering
+      engine, capable of rendering high-quality images
 
   Cairo
-      The `Cairo graphics <http://cairographics.org>`_ engine
+      The `Cairo graphics <https://cairographics.org>`_ engine
 
 
   dateutil
-      The `dateutil <http://labix.org/python-dateutil>`_ library
+      The `dateutil <https://dateutil.readthedocs.io>`_ library
       provides extensions to the standard datetime module
 
   EPS
-      Encapsulated Postscript (`EPS <http://en.wikipedia.org/wiki/Encapsulated_PostScript>`_)
+      Encapsulated Postscript (`EPS
+      <https://en.wikipedia.org/wiki/Encapsulated_PostScript>`_)
 
-  freetype
-      `freetype <http://www.freetype.org/>`_ is a font rasterization
+  FreeType
+      `FreeType <https://www.freetype.org/>`_ is a font rasterization
       library used by matplotlib which supports TrueType, Type 1, and
       OpenType fonts.
 
@@ -32,76 +33,86 @@ Glossary
       The Gimp Drawing Kit for GTK+
 
   GTK
-      The GIMP Toolkit (`GTK <http://www.gtk.org/>`_) graphical user interface library
+      The GIMP Toolkit (`GTK <https://www.gtk.org/>`_) graphical user interface
+      library
 
   JPG
       The Joint Photographic Experts Group (`JPEG
-      <http://en.wikipedia.org/wiki/Jpeg>`_) compression method and
+      <https://en.wikipedia.org/wiki/Jpeg>`_) compression method and
       file format for photographic images
 
   numpy
-      `numpy <http://numpy.scipy.org>`_ is the standard numerical
+      `numpy <http://www.numpy.org/>`_ is the standard numerical
       array library for python, the successor to Numeric and numarray.
       numpy provides fast operations for homogeneous data sets and
       common mathematical operations like correlations, standard
       deviation, fourier transforms, and convolutions.
 
   PDF
-      Adobe's Portable Document Format (`PDF <http://en.wikipedia.org/wiki/Portable_Document_Format>`_)
+      Adobe's Portable Document Format (`PDF
+      <https://en.wikipedia.org/wiki/Portable_Document_Format>`_)
 
   PNG
       Portable Network Graphics (`PNG
-      <http://en.wikipedia.org/wiki/Portable_Network_Graphics>`_), a raster graphics format
-      that employs lossless data compression which is more suitable
-      for line art than the lossy jpg format. Unlike the gif format,
+      <https://en.wikipedia.org/wiki/Portable_Network_Graphics>`_), a raster
+      graphics format that employs lossless data compression which is more
+      suitable for line art than the lossy jpg format. Unlike the gif format,
       png is not encumbered by requirements for a patent license.
 
   PS
-      Postscript (`PS <http://en.wikipedia.org/wiki/PostScript>`_) is a
+      Postscript (`PS <https://en.wikipedia.org/wiki/PostScript>`_) is a
       vector graphics ASCII text language widely used in printers and
       publishing.  Postscript was developed by adobe systems and is
       starting to show its age: for example is does not have an alpha
       channel.  PDF was designed in part as a next-generation document
       format to replace postscript
 
-  pygtk
-      `pygtk <http://www.pygtk.org/>`_ provides python wrappers for
-      the :term:`GTK` widgets library for use with the GTK or GTKAgg
-      backend.  Widely used on linux, and is often packages as
-      'python-gtk2'
+  pgi
+      `pgi <https://pypi.python.org/pypi/pgi/>` exists as a relatively
+      new Python wrapper to GTK3 and acts as a pure python alternative to
+      PyGObject.  pgi still exists in its infancy, currently missing many
+      features of PyGObject.  However Matplotlib does not use any of these
+      missing features.
+
+  PyGObject
+      `PyGObject <http://www.pygtk.org/>`_ provides Python wrappers for the
+      :term:`GTK` widgets library
 
   pyqt
-      `pyqt <http://wiki.python.org/moin/PyQt>`_ provides python
+      `pyqt <https://wiki.python.org/moin/PyQt>`_ provides python
       wrappers for the :term:`Qt` widgets library and is required by
-      the matplotlib QtAgg and Qt4Agg backends.  Widely used on linux
+      the matplotlib Qt5Agg and Qt4Agg backends.  Widely used on linux
       and windows; many linux distributions package this as
-      'python-qt3' or 'python-qt4'.
+      'python-qt5' or 'python-qt4'.
 
   python
-      `python <http://python.org>`_ is an object oriented interpreted
+      `python <https://www.python.org>`_ is an object oriented interpreted
       language widely used for scripting, application development, web
       application servers, scientific computing and more.
 
-
   pytz
-      `pytz <http://pytz.sourceforge.net/>`_ provides the Olson tz
+      `pytz <http://pythonhosted.org/pytz/>`_ provides the Olson tz
       database in Python. it allows accurate and cross platform
       timezone calculations and solves the issue of ambiguous times at
       the end of daylight savings
 
-
   Qt
-      `Qt <http://trolltech.com/products/qt/>`__ is a cross-platform
+      `Qt <https://www.qt.io/>`__ is a cross-platform
       application framework for desktop and embedded development.
 
   Qt4
-      `Qt4 <http://trolltech.com/products/qt/>`__ is the most recent
-      version of Qt cross-platform application framework for desktop
-      and embedded development.
+      `Qt4 <http://doc.qt.io/qt-4.8/index.html>`__ is the previous,
+      but most widely used, version of Qt cross-platform application
+      framework for desktop and embedded development.
+
+  Qt5
+      `Qt5 <http://doc.qt.io/qt-5/index.html>`__ is the current
+      version of Qt cross-platform application
+      framework for desktop and embedded development.
 
   raster graphics
       `Raster graphics
-      <http://en.wikipedia.org/wiki/Raster_graphics>`_, or bitmaps,
+      <https://en.wikipedia.org/wiki/Raster_graphics>`_, or bitmaps,
       represent an image as an array of pixels which is resolution
       dependent. Raster graphics are generally most practical for
       photo-realistic images, but do not scale easily without loss of
@@ -109,12 +120,12 @@ Glossary
 
   SVG
       The Scalable Vector Graphics format (`SVG
-      <http://en.wikipedia.org/wiki/Svg>`_).  An XML based vector
+      <https://en.wikipedia.org/wiki/Svg>`_).  An XML based vector
       graphics format supported by many web browsers.
 
   TIFF
       Tagged Image File Format (`TIFF
-      <http://en.wikipedia.org/wiki/Tagged_Image_File_Format>`_) is a
+      <https://en.wikipedia.org/wiki/Tagged_Image_File_Format>`_) is a
       file format for storing images, including photographs and line
       art.
 
@@ -126,7 +137,7 @@ Glossary
 
   vector graphics
       `vector graphics
-      <http://en.wikipedia.org/wiki/Vector_graphics>`_ use geometrical
+      <https://en.wikipedia.org/wiki/Vector_graphics>`_ use geometrical
       primitives based upon mathematical equations to represent images
       in computer graphics. Primitives can include points, lines,
       curves, and shapes or polygons. Vector graphics are scalable,
@@ -136,7 +147,7 @@ Glossary
       typesetting and graphic design applications.
 
   wxpython
-      `wxpython <http://www.wxpython.org/>`_ provides python wrappers
+      `wxpython <https://www.wxpython.org/>`_ provides python wrappers
       for the :term:`wxWidgets` library for use with the WX and WXAgg
       backends.  Widely used on linux, OS-X and windows, it is often
       packaged by linux distributions as 'python-wxgtk'

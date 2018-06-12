@@ -4,13 +4,17 @@
 Using matplotlib in a python shell
 **********************************
 
+.. warning::
+
+   This page is significantly out of date
+
 By default, matplotlib defers drawing until the end of the script
 because drawing can be an expensive operation, and you may not want
 to update the plot every time a single property is changed, only once
 after all the properties have changed.
 
 But when working from the python shell, you usually do want to update
-the plot with every command, eg, after changing the
+the plot with every command, e.g., after changing the
 :func:`~matplotlib.pyplot.xlabel`, or the marker style of a line.
 While this is simple in concept, in practice it can be tricky, because
 matplotlib is a graphical user interface application under the hood,
@@ -20,8 +24,18 @@ python shell.
 
 .. _ipython-pylab:
 
-Ipython to the rescue
+IPython to the rescue
 =====================
+
+.. note::
+
+    The mode described here still exists for historical reasons, but it is
+    highly advised not to use. It pollutes namespaces with functions that will
+    shadow python built-in and can lead to hard to track bugs. To get IPython
+    integration without imports the use of the  `%matplotlib` magic is
+    preferred. See
+    `ipython documentation <https://ipython.readthedocs.io/en/stable/interactive/reference.html#plotting-with-matplotlib>`_
+    .
 
 Fortunately, `ipython <http://ipython.org/>`_, an enhanced
 interactive python shell, has figured out all of these tricks, and is
@@ -59,7 +73,7 @@ run so you can continue tweaking the figure manually.
 There has been a lot of recent work to embed ipython, with pylab
 support, into various GUI applications, so check on the ipython
 mailing `list
-<http://projects.scipy.org/mailman/listinfo/ipython-user>`_ for the
+<https://mail.scipy.org/mailman/listinfo/ipython-user>`_ for the
 latest status.
 
 .. _other-shells:
@@ -78,7 +92,7 @@ are going to need to understand what a matplotlib backend is
 With the TkAgg backend, which uses the Tkinter user interface toolkit,
 you can use matplotlib from an arbitrary non-gui python shell.  Just set your
 ``backend : TkAgg`` and ``interactive : True`` in your
-:file:`matplotlibrc` file (see :ref:`customizing-matplotlib`) and fire
+:file:`matplotlibrc` file (see :doc:`/tutorials/introductory/customizing`) and fire
 up python.  Then::
 
   >>> from pylab import *
@@ -86,7 +100,7 @@ up python.  Then::
   >>> xlabel('hi mom')
 
 should work out of the box.  This is also likely to work with recent
-versions of the qt4agg and gtkagg backends, and with the macosx backend
+versions of the qt4agg and gtk3agg backends, and with the macosx backend
 on the Macintosh. Note, in batch mode,
 i.e. when making
 figures from scripts, interactive mode can be slow since it redraws
@@ -144,6 +158,3 @@ the performance hit::
     >>> close()
     >>> ion()      # turn updating back on
     >>> plot(rand(20), mfc='g', mec='r', ms=40, mew=4, ls='--', lw=3)
-
-
-

@@ -1,12 +1,21 @@
 """
-Comparative path demonstration of frequency from a fake signal of a pulsar.
-(mostly known because of the cover for Joy Division's Unknown Pleasures)
+========================
+MATPLOTLIB **UNCHAINED**
+========================
+
+Comparative path demonstration of frequency from a fake signal of a pulsar
+(mostly known because of the cover for Joy Division's Unknown Pleasures).
 
 Author: Nicolas P. Rougier
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
+# Fixing random state for reproducibility
+np.random.seed(19680801)
+
 
 # Create new Figure with black background
 fig = plt.figure(figsize=(8, 8), facecolor='black')
@@ -17,7 +26,7 @@ ax = plt.subplot(111, frameon=False)
 # Generate random data
 data = np.random.uniform(0, 1, (64, 75))
 X = np.linspace(-1, 1, data.shape[-1])
-G = 1.5 * np.exp(-4 * X * X)
+G = 1.5 * np.exp(-4 * X ** 2)
 
 # Generate line plots
 lines = []
@@ -59,7 +68,6 @@ def update(*args):
     # Return modified artists
     return lines
 
-# Construct the animation, using the update function as the animation
-# director.
+# Construct the animation, using the update function as the animation director.
 anim = animation.FuncAnimation(fig, update, interval=10)
 plt.show()
